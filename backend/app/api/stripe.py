@@ -185,6 +185,8 @@ async def create_checkout_session(payload: CheckoutSessionRequest, request: Requ
         raise HTTPException(status_code=400, detail="Preço não corresponde ao plano da clínica")
 
     try:
+        import time
+        expires_at = int(time.time() + 3600)  # Expira em 1 hora (3600 segundos)
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{"price": payload.price_id, "quantity": 1}],
@@ -193,6 +195,7 @@ async def create_checkout_session(payload: CheckoutSessionRequest, request: Requ
             cancel_url=cancel_url,
             metadata=metadata,
             subscription_data={"metadata": metadata},
+            expires_at=expires_at,
         )
         return {"session_id": session.id, "url": session.url}
     except InvalidRequestError as e:

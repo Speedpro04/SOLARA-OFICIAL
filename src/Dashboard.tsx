@@ -44,7 +44,11 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
   const [isListening, setIsListening] = useState(false);
   const [voiceTarget, setVoiceTarget] = useState<'solara' | 'whatsapp' | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [voiceVolume, setVoiceVolume] = useState(0);
   const recognitionRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const volumeIntervalRef = useRef<number | null>(null);
   
   // Estados de Dados Reais
   const [specialistsList, setSpecialistsList] = useState<any[]>([]);
@@ -472,28 +476,38 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
     };
 
     recognition.onend = () => {
+      console.log('🎙️ Motor de voz parou. Tentando reiniciar se isListening for true:', isListeningRef.current);
       if (isListeningRef.current) {
-        try {
-          recognition.start();
-        } catch (e) { }
+        // Pequeno delay de 300ms antes de reiniciar para não "atropelar" o hardware
+        setTimeout(() => {
+          if (isListeningRef.current) {
+            try {
+              recognition.start();
+              console.log('🎙️ Motor de voz reiniciado com sucesso.');
+            } catch (e) { 
+              console.error('🎙️ Falha ao reiniciar motor:', e);
+            }
+          }
+        }, 300);
       }
     };
 
     recognition.onerror = (event: any) => {
       console.error('Unified Voice Error:', event.error);
+      
+      // Se for apenas silêncio, não mata o processo, deixa o onend reiniciar
+      if (event.error === 'no-speech') return;
+
       if (event.error === 'not-allowed') {
         setVoiceError('Permissão negada');
       } else if (event.error === 'audio-capture') {
         setVoiceError('Mic não disponível');
-      } else if (event.error !== 'no-speech') {
+      } else {
         setVoiceError('Erro: ' + event.error);
       }
       
-      // Reseta o target para não travar nenhum campo de input
       setIsListening(false);
       setVoiceTarget(null);
-
-      // Limpa a mensagem de erro da tela após 3 segundos (auto-reset do disjuntor)
       setTimeout(() => setVoiceError(null), 3000);
     };
 
@@ -518,8 +532,35 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       recognitionRef.current?.stop();
     } catch (e) {}
 
+    // Limpeza de Audio Analyzer
+    if (volumeIntervalRef.current) clearInterval(volumeIntervalRef.current);
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    setVoiceVolume(0);
+
     if (isListening) {
       setVoiceError(null);
+      
+      // Ativar Monitor de Volume (Visual)
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        const audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        audioContextRef.current = audioContext;
+        analyserRef.current = analyser;
+        
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        volumeIntervalRef.current = window.setInterval(() => {
+          analyser.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+          setVoiceVolume(average);
+        }, 100);
+      }).catch(() => {});
+
       const timer = setTimeout(() => {
         try {
           recognitionRef.current?.start();
@@ -1359,9 +1400,16 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                            onClick={toggleVoiceWA} 
                            title="Ditar Mensagem"
                            disabled={!activeChat}
-                           style={{ background: 'transparent', color: (voiceError && voiceTarget === 'whatsapp') ? '#ef4444' : (isListening && voiceTarget === 'whatsapp') ? colors.success : '#8696a0', border: 'none', padding: '8px', cursor: activeChat ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
+                           style={{ background: 'transparent', color: (voiceError && voiceTarget === 'whatsapp') ? '#ef4444' : (isListening && voiceTarget === 'whatsapp') ? colors.success : '#8696a0', border: 'none', padding: '8px', cursor: activeChat ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative' }}
                          >
                            <Mic size={22} style={{ animation: (isListening && voiceTarget === 'whatsapp') ? 'pulse 1.5s infinite' : 'none' }} />
+                           {isListening && voiceTarget === 'whatsapp' && (
+                             <div style={{ position: 'absolute', bottom: 5, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 2, alignItems: 'flex-end', height: 8 }}>
+                               {[1,2,3,4,5].map(i => (
+                                 <div key={i} style={{ width: 2, background: colors.success, height: `${Math.min(8, 2 + (voiceVolume / 12) * i)}px`, transition: 'height 0.1s' }} />
+                               ))}
+                             </div>
+                           )}
                          </button>
                          <input 
                            type="text" 
@@ -2064,9 +2112,16 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                 <button 
                   onClick={toggleVoice} 
                   title="Comando de Voz"
-                  style={{ background: isListening ? colors.accent : colors.bg, color: isListening ? colors.primary : colors.textMuted, border: 'none', borderRadius: 12, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
+                  style={{ background: isListening ? colors.accent : colors.bg, color: isListening ? colors.primary : colors.textMuted, border: 'none', borderRadius: 12, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative' }}
                 >
                   <Mic size={20} style={{ animation: isListening ? 'pulse 1.5s infinite' : 'none' }} />
+                  {isListening && voiceTarget === 'solara' && (
+                    <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 2, alignItems: 'flex-end', height: 10 }}>
+                      {[1,2,3,4,5].map(i => (
+                        <div key={i} style={{ width: 2, background: colors.primary, height: `${Math.min(10, 2 + (voiceVolume / 10) * i)}px`, transition: 'height 0.1s' }} />
+                      ))}
+                    </div>
+                  )}
                 </button>
                 <button onClick={() => handleVoiceSend()} style={{ background: colors.primary, color: '#fff', border: 'none', borderRadius: 12, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Send size={20} />
