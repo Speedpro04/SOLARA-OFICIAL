@@ -1,7 +1,12 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent.parent
+
+load_dotenv(PROJECT_ROOT / ".env")
+load_dotenv(BASE_DIR / ".env", override=True)
 
 class Settings:
     # Supabase
@@ -36,6 +41,8 @@ class Settings:
 
     # Frontend URL (for checkout redirects)
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "")
+    EVOLUTION_WEBHOOK_SECRET = os.getenv("EVOLUTION_WEBHOOK_SECRET", "")
 
     # Stripe
     STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")

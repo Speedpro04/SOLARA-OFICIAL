@@ -237,7 +237,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
       </section>
 
       {/* Features Detail */}
-      <section id="solucoes" style={{ padding: '120px 0' }}>
+      <section id="solucoes" style={{ padding: '120px 0 0 0' }}>
         <div style={{ ...containerStyle, padding: '0 20px' }}>
           <div style={{ textAlign: 'center', marginBottom: 80, maxWidth: 800, margin: '0 auto 80px' }}>
             <h2 style={{ fontSize: '3.5rem', fontWeight: '800', marginBottom: 24, color: colors.primary, letterSpacing: '-0.02em' }}>Projetado para sua Clínica</h2>
@@ -361,6 +361,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
               </motion.div>
             ))}
           </div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            style={{ 
+              marginTop: '40px', 
+              marginBottom: '40px', 
+              padding: '0 100px', 
+              textAlign: 'center' 
+            }}
+          >
+            <p style={{ fontSize: '1.15rem', color: '#555', lineHeight: '1.6', fontWeight: '400' }}>
+              <strong style={{ color: colors.primary, fontWeight: '700' }}>Automação Inteligente de WhatsApp</strong> — Para clínicas de rotina padrão (até 50 lembretes diários), a integração é imediata, via QR Code e sem custos extras. Para clínicas com alto volume de campanhas de marketing (acima de 50 disparos/dia), nossa plataforma integra-se diretamente com a API Oficial da Meta para garantir a entrega e blindar seu número contra bloqueios (aplicam-se taxas de consumo da Meta).
+            </p>
+          </motion.div>
         </div>
       </section>
 

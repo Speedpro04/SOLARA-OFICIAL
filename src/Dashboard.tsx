@@ -17,6 +17,15 @@ interface DashboardProps {
   clinicId?: string;
 }
 
+type SolaraRole = 'assistant' | 'user';
+
+interface SolaraMessage {
+  role: SolaraRole;
+  content: string;
+}
+
+const SOLARA_WELCOME_MESSAGE = 'Olá! Sou a Solara, gestora inteligente do atendimento da sua clínica. Posso ajudar com operação, recepção, conversão de pacientes e decisões do dia a dia. O que você quer destravar agora?';
+
 const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
   const [activeTab, setActiveTab] = useState('reception');
   const [showRecordModal, setShowRecordModal] = useState(false);
@@ -33,10 +42,11 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
   const [activeChat, setActiveChat] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [solaraMessages, setSolaraMessages] = useState<any[]>([
-    { role: 'assistant', content: 'Olá! Sou a Solara, Gestora de Inteligência da sua clínica. Estou monitorando os agendamentos e a recepção. Como posso otimizar sua operação agora?' }
+  const [solaraMessages, setSolaraMessages] = useState<SolaraMessage[]>([
+    { role: 'assistant', content: SOLARA_WELCOME_MESSAGE }
   ]);
   const [solaraInput, setSolaraInput] = useState('');
+  const [isSolaraSending, setIsSolaraSending] = useState(false);
   const [clinicLimit, setClinicLimit] = useState(2); // Default to 2 if not loaded
   const solaraChatRef = useRef<HTMLDivElement>(null);
   
@@ -199,6 +209,56 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       solaraChatRef.current.scrollTop = solaraChatRef.current.scrollHeight;
     }
   }, [solaraMessages]);
+
+  useEffect(() => {
+    const loadChatMessages = async () => {
+      if (!activeChat?.id) {
+        setMessages([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('patient_id', activeChat.id)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Erro ao carregar histórico do WhatsApp:', error);
+          return;
+        }
+
+        setMessages(data || []);
+      } catch (error) {
+        console.error('Erro ao buscar mensagens do chat ativo:', error);
+      }
+    };
+
+    loadChatMessages();
+
+    if (!activeChat?.id) return;
+
+    const channel = supabase
+      .channel(`messages-${activeChat.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `patient_id=eq.${activeChat.id}`,
+        },
+        () => {
+          loadChatMessages();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeChat?.id]);
 
   const handleSaveAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -382,64 +442,56 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
   };
 
   // === SOLARA IA - ENVIAR MENSAGEM ===
-  const handleSolaraSend = (manualText?: string) => {
+  const handleSolaraSend = async (manualText?: string) => {
     const msg = (manualText || solaraInput).trim();
-    if (!msg) return;
+    if (!msg || isSolaraSending) return;
 
-    // Adicionar mensagem do usuário
-    setSolaraMessages(prev => [...prev, { role: 'user', content: msg }]);
+    const nextUserMessage: SolaraMessage = { role: 'user', content: msg };
+    const history = solaraMessages
+      .filter((message) => message.content.trim())
+      .slice(-10);
+
+    setIsSolaraSending(true);
+    setSolaraMessages(prev => [...prev, nextUserMessage]);
     setSolaraInput('');
 
-    // Simular resposta da IA baseada em palavras-chave (RAG local)
-    setTimeout(() => {
-      let response = '';
-      const lower = msg.toLowerCase();
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: msg,
+          chat_history: history
+        })
+      });
 
-      // --- GUARD RAILS (SEGURANÇA DO SISTEMA) ---
-      const guardRails = [
-        'prompt', 'instrução', 'instruções', 'regra', 'secret', 'segredo', 'código', 'code', 'programada', 
-        'quem te criou', 'quem fez você', 'instruções do sistema', 'system prompt', 'api key', 'chave de acesso'
-      ];
-
-      if (guardRails.some(word => lower.includes(word))) {
-        response = 'Como gestora do Solara Connect, meu foco é a produtividade da sua clínica e a segurança dos dados dos clientes. Informações sobre minha arquitetura interna são confidenciais para garantir a integridade do sistema. Como posso ajudar na sua gestão agora?';
-        setSolaraMessages(prev => [...prev, { role: 'assistant', content: response }]);
-        return;
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.detail || 'Falha ao consultar a Solara.');
       }
 
-      // Bloqueio de Nicho Veterinário
-      if (lower.includes('veterinário') || lower.includes('pet') || lower.includes('animal') || lower.includes('cachorro') || lower.includes('gato')) {
-        response = 'Como gestora do Solara Connect, meu foco é exclusivamente a Saúde Humana (Medicina, Odontologia, Estética e Bem-estar). Não oferecemos suporte para clínicas veterinárias para garantir a máxima especialização no atendimento aos seus clientes.';
-        setSolaraMessages(prev => [...prev, { role: 'assistant', content: response }]);
-        return;
-      }
-
-      if (lower.includes('agendar') || lower.includes('marcar') || lower.includes('consulta') || lower.includes('horário')) {
-        response = 'Como gestora, posso iniciar o agendamento. O cliente possui algum convênio (Unimed, Bradesco, etc) ou o atendimento será particular?';
-      } else if (lower.includes('convênio') || lower.includes('unimed') || lower.includes('bradesco') || lower.includes('amil')) {
-        response = 'Excelente. Vou registrar o convênio no prontuário. Lembre-se que alguns procedimentos de estética não são cobertos, devendo ser lançados como particular.';
-      } else if (lower.includes('odonto') || lower.includes('dentista') || lower.includes('dente') || lower.includes('orçamento')) {
-        response = 'Na Odontologia, o foco é a conversão de orçamentos. Notei que temos planos de tratamento em aberto. Deseja que eu analise a taxa de aprovação de próteses e implantes deste mês?';
-      } else if (lower.includes('estética') || lower.includes('procedimento') || lower.includes('botox') || lower.includes('preenchimento')) {
-        response = 'Para clínicas de Estética, gerencio o controle de estoque de insumos e o intervalo entre sessões. Lembrei 5 clientes que precisam de retoque de toxina botulínica esta semana. Quer enviar o convite?';
-      } else if (lower.includes('médico') || lower.includes('prontuário') || lower.includes('receita') || lower.includes('exame')) {
-        response = 'Na área Médica, priorizo a agilidade no EMR (Prontuário Eletrônico). Posso ajudar a organizar os resultados de exames pendentes para sua revisão antes das consultas de hoje.';
-      } else if (lower.includes('confirmar') || lower.includes('confirmação')) {
-        response = 'Gestão de Absenteísmo: Já enviei as confirmações automáticas. Nossa taxa de "No-Show" caiu 15% este mês graças aos lembretes humanizados que configurei.';
-      } else if (lower.includes('faturamento') || lower.includes('dinheiro') || lower.includes('receita') || lower.includes('lucro')) {
-        response = 'Financeiro: Estou monitorando o fluxo de caixa. O Ticket Médio subiu 10% com os novos pacotes de estética. Recomendo focar nos clientes de "Lifetime Value" alto este mês.';
-      } else if (lower.includes('cliente') || lower.includes('fila') || lower.includes('espera')) {
-        response = `Monitoramento: Temos ${appointmentsList.filter(a => a.status === 'pending' || a.status === 'confirmed').length} clientes na jornada de hoje. Recomendo agilizar o check-in da sala 02 para evitar atrasos.`;
-      } else if (lower.includes('whatsapp') || lower.includes('mensagem')) {
-        response = 'Comunicação Omnichannel: O WhatsApp está integrado. Estou disparando instruções de pós-operatório para os clientes que saíram de cirurgia hoje. Isso reduz chamadas na recepção.';
-      } else if (lower.includes('oi') || lower.includes('olá') || lower.includes('bom dia') || lower.includes('boa tarde')) {
-        response = 'Olá! Sou a Solara, sua Gestora Especialista em Saúde Humana. Estou pronta para otimizar sua clínica de Odonto, Estética ou Medicina. O que vamos gerenciar agora?';
-      } else {
-        response = 'Entendi. Como sua gestora, posso atuar em faturamento, retenção de clientes, conformidade LGPD ou na automação do seu nicho específico de saúde. Qual seu desafio agora?';
-      }
-
-      setSolaraMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    }, 800);
+      const responseText = String(data?.solara_response || '').trim();
+      setSolaraMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: responseText || 'Consigo te ajudar melhor se você me der um pouco mais de contexto sobre a situação.'
+        }
+      ]);
+    } catch (error) {
+      console.error('Erro ao consultar Solara AI:', error);
+      setSolaraMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Tive uma instabilidade ao processar sua solicitação agora. Se quiser, pode repetir a mensagem que eu continuo daqui.'
+        }
+      ]);
+    } finally {
+      setIsSolaraSending(false);
+    }
   };
 
   // === UNIFIED VOICE ENGINE ===
@@ -2085,7 +2137,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setSolaraMessages([{ role: 'assistant', content: 'Conversa limpa. Como posso ajudar?' }])} title="Limpar Conversa" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', color: '#fff' }}><Trash2 size={16} /></button>
+                  <button onClick={() => setSolaraMessages([{ role: 'assistant', content: SOLARA_WELCOME_MESSAGE }])} title="Limpar Conversa" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', color: '#fff' }}><Trash2 size={16} /></button>
                   <button onClick={() => setShowSolara(false)} title="Fechar" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', color: '#fff' }}><X size={16} /></button>
                 </div>
               </div>
@@ -2096,6 +2148,11 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     {m.content}
                   </div>
                 ))}
+                {isSolaraSending && (
+                  <div style={{ alignSelf: 'flex-start', background: '#fff', color: colors.textMuted, padding: '12px 16px', borderRadius: '0 16px 16px 16px', fontSize: '15px', fontWeight: 400, maxWidth: '85%', boxShadow: '0 4px 10px rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.05)' }}>
+                    Solara está organizando a melhor resposta...
+                  </div>
+                )}
               </div>
 
               <div style={{ padding: 16, borderTop: '1px solid rgba(0,0,0,0.05)', background: '#fff', display: 'flex', gap: 10 }}>
@@ -2106,12 +2163,14 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     if (voiceError) setVoiceError(null);
                   }}
                   onKeyDown={e => e.key === 'Enter' && (handleVoiceSend() as any)}
-                  placeholder={(voiceError && voiceTarget === 'solara') ? `❌ ${voiceError}` : (isListening && voiceTarget === 'solara') ? "Ouvindo... Fale agora" : "Digite sua dúvida ou diga 'Solara'"} 
+                  placeholder={(voiceError && voiceTarget === 'solara') ? `❌ ${voiceError}` : (isListening && voiceTarget === 'solara') ? "Ouvindo... Fale agora" : isSolaraSending ? "Solara está respondendo..." : "Digite sua dúvida ou diga 'Solara'"} 
+                  disabled={isSolaraSending}
                   style={{ flex: 1, padding: '12px 16px', borderRadius: 12, border: (voiceError && voiceTarget === 'solara') ? '2px solid #ef4444' : (isListening && voiceTarget === 'solara') ? `2px solid ${colors.accent}` : '1px solid #e2e8f0', outline: 'none', fontSize: '15px', transition: 'all 0.3s' }} 
                 />
                 <button 
                   onClick={toggleVoice} 
                   title="Comando de Voz"
+                  disabled={isSolaraSending}
                   style={{ background: isListening ? colors.accent : colors.bg, color: isListening ? colors.primary : colors.textMuted, border: 'none', borderRadius: 12, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative' }}
                 >
                   <Mic size={20} style={{ animation: isListening ? 'pulse 1.5s infinite' : 'none' }} />
@@ -2123,7 +2182,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     </div>
                   )}
                 </button>
-                <button onClick={() => handleVoiceSend()} style={{ background: colors.primary, color: '#fff', border: 'none', borderRadius: 12, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button onClick={() => handleVoiceSend()} disabled={isSolaraSending} style={{ background: colors.primary, opacity: isSolaraSending ? 0.7 : 1, color: '#fff', border: 'none', borderRadius: 12, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Send size={20} />
                 </button>
               </div>
