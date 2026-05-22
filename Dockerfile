@@ -1,17 +1,24 @@
-# Build Stage
-FROM node:22 AS build
+# ── Stage 1: Build ─────────────────────────────────────────────
+FROM node:22-alpine AS build
+
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm install
+RUN npm ci --frozen-lockfile
+
 COPY . .
 RUN npm run build
 
-# Production Stage
-FROM node:22-slim
+# ── Stage 2: Serve with Caddy ───────────────────────────────────
+FROM caddy:2-alpine
+
 WORKDIR /app
-# Instala um servidor estático simples para servir o 'dist'
-RUN npm install -g serve
-COPY --from=build /app/dist ./dist
+
+# Copy built assets
+COPY --from=build /app/dist /app/dist
+
+# Copy Caddy config
+COPY Caddyfile /etc/caddy/Caddyfile
+
 EXPOSE 80
-# Serve a pasta dist na porta 80
-CMD ["serve", "-s", "dist", "-l", "80"]
+EXPOSE 443
