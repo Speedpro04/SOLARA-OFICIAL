@@ -1,5 +1,4 @@
-import React from 'react';
-import { ShieldCheck, Anchor, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
+import { ShieldCheck, Anchor, AlertTriangle, FileText } from 'lucide-react';
 import './yachts.css';
 
 // Componente para a visualização do Dono da Embarcação

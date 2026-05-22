@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Home, Ship, Anchor, FileText, Users, Bell, LogOut, Search, Filter, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Home, Ship, Anchor, FileText, Users, Bell, LogOut, Search, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { YachtChecklist } from './YachtChecklist';
 import './yachts.css';
