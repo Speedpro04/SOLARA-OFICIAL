@@ -6,11 +6,9 @@ import RegisterPage from './RegisterPage';
 import CheckoutPage from './CheckoutPage';
 import { logoutUser, getCurrentSession, hasActiveSubscription } from './lib/auth';
 import { supabase } from './lib/supabase';
-import { YachtChecklist } from './YachtChecklist';
-import { YachtReport } from './YachtReport';
 import './index.css';
 
-type ViewState = 'landing' | 'login' | 'register' | 'checkout' | 'dashboard' | 'loading' | 'yacht_checklist' | 'yacht_report';
+type ViewState = 'landing' | 'login' | 'register' | 'checkout' | 'dashboard' | 'loading';
 
 interface SelectedPlan {
   name: string;
@@ -170,25 +168,10 @@ function App() {
 
       {/* ======= LANDING PAGE ======= */}
       {view === 'landing' && (
-        <>
-          {/* Temporary buttons for Yacht's Atlas demo */}
-          <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, display: 'flex', gap: '10px' }}>
-            <button 
-              onClick={() => setView('yacht_checklist')}
-              style={{ padding: '10px', background: '#D4AF37', color: '#000', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Ver Checklist (Marina)
-            </button>
-            <button 
-              onClick={() => setView('yacht_report')}
-              style={{ padding: '10px', background: '#0a0a0c', color: '#D4AF37', border: '1px solid #D4AF37', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Ver Relatório (Dono)
-            </button>
-          </div>
-          <LandingPage
-            onNavigateToLogin={() => setView('login')}
-            onNavigateToRegister={handleNavigateToRegister}
-          />
-        </>
+        <LandingPage
+          onNavigateToLogin={() => setView('login')}
+          onNavigateToRegister={handleNavigateToRegister}
+        />
       )}
       {billingError && view === 'landing' && (
         <div style={{ position: 'fixed', bottom: 20, left: 20, right: 20, background: '#fff3cd', color: '#856404', border: '1px solid #ffeeba', padding: '12px 16px', borderRadius: 8, zIndex: 1000 }}>
@@ -233,28 +216,6 @@ function App() {
       {/* ======= DASHBOARD ======= */}
       {view === 'dashboard' && (
         <Dashboard onLogout={handleLogout} clinicId={clinicId} />
-      )}
-
-      {/* ======= YACHT'S ATLAS ======= */}
-      {view === 'yacht_checklist' && (
-        <>
-          <button 
-            onClick={() => setView('landing')}
-            style={{ position: 'fixed', top: 20, left: 20, zIndex: 9999, padding: '10px', background: '#141416', color: '#fff', border: '1px solid #333', borderRadius: '5px', cursor: 'pointer' }}>
-            Voltar
-          </button>
-          <YachtChecklist />
-        </>
-      )}
-      {view === 'yacht_report' && (
-        <>
-          <button 
-            onClick={() => setView('landing')}
-            style={{ position: 'fixed', top: 20, left: 20, zIndex: 9999, padding: '10px', background: '#141416', color: '#fff', border: '1px solid #333', borderRadius: '5px', cursor: 'pointer' }}>
-            Voltar
-          </button>
-          <YachtReport />
-        </>
       )}
     </div>
   );
