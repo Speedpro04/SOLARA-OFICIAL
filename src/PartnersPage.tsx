@@ -39,6 +39,47 @@ const categoriesList = [
   { id: 'seguros', title: 'Seguros para Clínicas', icon: '🛡️' },
   { id: 'financiamentos', title: 'Financiamento de Equipamentos', icon: '💰' }
 ];
+const staticPartners: Partner[] = [
+  // Insumos Odontológicos
+  { id: '1', name: 'Dental Cremer', specialty: 'Maior centro de distribuição da América Latina', site: 'https://www.dentalcremer.com.br', region: 'nacional', location: 'Brasil', category_id: 'insumos-odonto' },
+  { id: '2', name: 'Dental Speed', specialty: 'Grande e-commerce nacional especializado', site: 'https://www.dentalspeed.com', region: 'nacional', location: 'Brasil', category_id: 'insumos-odonto' },
+  { id: '3', name: 'Surya Dental', specialty: 'Distribuidora tradicional com clube de vantagens', site: 'https://www.suryadental.com.br', region: 'nacional', location: 'Brasil', category_id: 'insumos-odonto' },
+  { id: '4', name: 'Dental Master', specialty: 'Distribuidora com forte capilaridade em SP', site: 'https://www.dentalmaster.com.br', region: 'nacional', location: 'São Paulo', category_id: 'insumos-odonto' },
+  { id: '5', name: 'Dentalshop', specialty: 'Focada em entregas rápidas de insumos clínicos', site: 'https://www.dentalshop.com.br', region: 'nacional', location: 'Brasil', category_id: 'insumos-odonto' },
+  { id: '6', name: 'FB Odonto', specialty: 'Venda integrada de descartáveis e peças', site: '#', region: 'nacional', location: 'Brasil', category_id: 'insumos-odonto' },
+
+  // Equipamentos Odontológicos
+  { id: '7', name: 'Gnatus', specialty: 'Fabricantes nacionais de consultórios', site: 'https://www.gnatus.com.br', region: 'nacional', location: 'Brasil', category_id: 'equip-odonto' },
+  { id: '8', name: 'Olsen', specialty: 'Cadeiras premium de alta durabilidade', site: 'https://www.olsen.odo.br', region: 'nacional', location: 'Brasil', category_id: 'equip-odonto' },
+  { id: '9', name: 'Dabi Atlante', specialty: 'Líder em cadeiras e conjuntos clínicos avançados', site: 'https://www.dabiatlante.com.br', region: 'nacional', location: 'Brasil', category_id: 'equip-odonto' },
+  { id: '10', name: 'Saevo', specialty: 'Foco em custo-benefício e ergonomia', site: 'https://www.saevo.com.br', region: 'nacional', location: 'Brasil', category_id: 'equip-odonto' },
+  { id: '11', name: 'Kavo', specialty: 'Equipamentos e peças de alta performance', site: 'https://www.kavo.com/pt-br', region: 'nacional', location: 'Brasil', category_id: 'equip-odonto' },
+  { id: '12', name: 'Woson', specialty: 'Biossegurança e automação de consultórios', site: 'https://www.woson.com.br', region: 'nacional', location: 'Brasil', category_id: 'equip-odonto' },
+
+  // Diagnóstico por Imagem
+  { id: '13', name: 'GE HealthCare', specialty: 'Tecnologia em ultrassom e equipamentos pesados', site: 'https://www.gehealthcare.com.br', region: 'nacional', location: 'Brasil', category_id: 'diag-imagem' },
+  { id: '14', name: 'Siemens Healthineers', specialty: 'Sistemas de imagem médica de alta fidelidade', site: 'https://www.siemens-healthineers.com/br', region: 'nacional', location: 'Brasil', category_id: 'diag-imagem' },
+  { id: '15', name: 'Mindray Brasil', specialty: 'Custo-benefício em sistemas de ultrassom clínico', site: 'https://www.mindray.com/br', region: 'nacional', location: 'Brasil', category_id: 'diag-imagem' },
+  { id: '16', name: 'Dabi Atlante Imagem', specialty: 'Radiologia digital e tomógrafos odontológicos', site: 'https://www.dabiatlante.com.br', region: 'nacional', location: 'Brasil', category_id: 'diag-imagem' },
+  { id: '17', name: 'Vatech Brasil', specialty: 'Líder em radiologia odontológica digital', site: 'https://www.vatechbrasil.com.br', region: 'nacional', location: 'Brasil', category_id: 'diag-imagem' },
+  { id: '18', name: 'PreXion X-Ray', specialty: 'Aparelhos de Raio-X compactos para consultórios', site: 'https://prexion.com', region: 'nacional', location: 'Brasil', category_id: 'diag-imagem' },
+
+  // Uniformes e Descartáveis
+  { id: '19', name: 'Cremer', specialty: 'Fornecedora massiva de descartáveis cirúrgicos', site: 'https://www.cremer.com.br', region: 'nacional', location: 'Brasil', category_id: 'uniformes' },
+  { id: '20', name: 'Cirúrgica Fernandes', specialty: 'Distribuidora de correlatos e descartáveis', site: 'https://www.cfernandes.com.br', region: 'nacional', location: 'Brasil', category_id: 'uniformes' },
+  { id: '21', name: 'MA Hospitalar', specialty: 'Do insumo básico ao equipamento de proteção', site: 'https://www.mahospitalar.com.br', region: 'nacional', location: 'Brasil', category_id: 'uniformes' },
+  { id: '22', name: 'Dufarma', specialty: 'Canal logístico para descartáveis de alto giro', site: 'https://www.dufarma.com.br', region: 'nacional', location: 'Brasil', category_id: 'uniformes' },
+  { id: '23', name: 'Dra. Cherie', specialty: 'Jalecos e uniformes premium de alta costura', site: 'https://www.dracherie.com.br', region: 'nacional', location: 'Brasil', category_id: 'uniformes' },
+  { id: '24', name: 'Uniformes Profissionais', specialty: 'Confecção em escala de uniformes clínicos', site: '#', region: 'nacional', location: 'Brasil', category_id: 'uniformes' },
+
+  // Resíduos
+  { id: '25', name: 'Corpus Saneamento', specialty: 'Gerenciamento de lixo hospitalar', site: 'https://www.corpus.com.br', region: 'nacional', location: 'Brasil', category_id: 'residuos' },
+  { id: '26', name: 'Mig Lix', specialty: 'Incineração e destinação em SP', site: 'https://www.miglix.com.br', region: 'nacional', location: 'São Paulo', category_id: 'residuos' },
+  { id: '27', name: 'Loga', specialty: 'Gestão de resíduos de saúde de grandes áreas', site: 'https://www.loga.com.br', region: 'nacional', location: 'São Paulo', category_id: 'residuos' },
+  { id: '28', name: 'Ecourbis Ambiental', specialty: 'Tratamento e destinação final homologada', site: 'https://www.ecourbis.com.br', region: 'nacional', location: 'São Paulo', category_id: 'residuos' },
+  { id: '29', name: 'Resiforte', specialty: 'Gerenciamento de resíduos biológicos', site: 'https://www.resiforte.com.br', region: 'nacional', location: 'Brasil', category_id: 'residuos' },
+  { id: '30', name: 'Sustentare Saneamento', specialty: 'Coleta e tratamento de resíduos infectantes', site: 'https://www.sustentaresaneamento.com.br', region: 'nacional', location: 'Brasil', category_id: 'residuos' }
+];
 
 interface PartnersPageProps {
   clinicId?: string;
@@ -48,7 +89,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategoryTab, setActiveCategoryTab] = useState('all');
   const [regionFilter, setRegionFilter] = useState<'all' | 'nacional' | 'vale'>('all');
-  const [partnersList, setPartnersList] = useState<Partner[]>([]);
+  const [partnersList, setPartnersList] = useState<Partner[]>(staticPartners);
 
   useEffect(() => {
     const fetchPartners = async () => {
@@ -60,7 +101,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
           console.warn('Erro ao carregar parceiros do banco (tabela pode estar vazia):', error.message);
           return;
         }
-        setPartnersList(data || []);
+        setPartnersList([...staticPartners, ...(data || [])]);
       } catch (err) {
         console.error('Erro ao ler parceiros do Supabase:', err);
       }
@@ -72,12 +113,14 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
   const partnersData = useMemo(() => {
     return categoriesList.map(cat => {
       const catPartners = partnersList.filter(p => p.category_id === cat.id);
+      // Garantir que a soma de parceiros reais + slot vazio dê no máximo 6 cards
+      const combined = [
+        ...catPartners,
+        generateEmptySlot(`${cat.id}-empty`, cat.title, cat.id === 'regional-vale' ? 'vale' : 'nacional')
+      ].slice(0, 6);
       return {
         ...cat,
-        partners: [
-          ...catPartners,
-          generateEmptySlot(`${cat.id}-empty`, cat.title, cat.id === 'regional-vale' ? 'vale' : 'nacional')
-        ]
+        partners: combined
       };
     });
   }, [partnersList]);
@@ -168,7 +211,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%)',
         backdropFilter: 'blur(10px)',
         border: '1px solid rgba(226, 232, 240, 0.8)',
-        borderRadius: '16px',
+        borderRadius: '3px',
         padding: '32px',
         boxShadow: '0 20px 40px rgba(0, 0, 0, 0.02)'
       }}>
@@ -176,7 +219,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
           <div style={{
             background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)',
             padding: '16px',
-            borderRadius: '12px',
+            borderRadius: '3px',
             boxShadow: '0 10px 25px rgba(19, 15, 64, 0.2)',
             display: 'flex',
             alignItems: 'center',
@@ -186,14 +229,14 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h2 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, color: '#130f40', letterSpacing: '-1px' }}>
+              <h2 style={{ fontSize: '2.2rem', fontWeight: 700, margin: 0, color: '#130f40', letterSpacing: '-1px' }}>
                 Partnership Premium
               </h2>
               <span style={{ 
                 background: 'linear-gradient(90deg, #f97316 0%, #ea580c 100%)', 
                 color: '#fff', 
                 fontSize: '0.75rem', 
-                fontWeight: 700, 
+                fontWeight: 600, 
                 padding: '4px 10px', 
                 borderRadius: '9999px',
                 boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)',
@@ -202,7 +245,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
                 EXCLUSIVO
               </span>
             </div>
-            <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '6px', margin: 0, fontWeight: 500 }}>
+            <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '6px', margin: 0, fontWeight: 400 }}>
               O maior hub homologado de suprimentos, equipamentos de ponta e resíduos para sua clínica médica ou odontológica.
             </p>
           </div>
@@ -213,7 +256,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
       <div style={{
         background: '#ffffff',
         border: '1px solid rgba(226, 232, 240, 0.8)',
-        borderRadius: '16px',
+        borderRadius: '3px',
         padding: '24px',
         boxShadow: '0 15px 35px rgba(0, 0, 0, 0.02)',
         marginBottom: '40px',
@@ -234,7 +277,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
               style={{ 
                 width: '100%', 
                 padding: '14px 16px 14px 48px', 
-                borderRadius: '10px', 
+                borderRadius: '3px', 
                 border: '1.5px solid #e2e8f0', 
                 outline: 'none', 
                 fontSize: '1rem',
@@ -258,7 +301,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
             display: 'flex', 
             background: '#f1f5f9', 
             padding: '4px', 
-            borderRadius: '10px', 
+            borderRadius: '3px', 
             border: '1px solid #e2e8f0' 
           }}>
             <button 
@@ -266,9 +309,9 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
               style={{
                 padding: '10px 18px',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '3px',
                 fontSize: '0.9rem',
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: 'pointer',
                 background: regionFilter === 'all' ? '#130f40' : 'transparent',
                 color: regionFilter === 'all' ? '#fff' : '#475569',
@@ -282,9 +325,9 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
               style={{
                 padding: '10px 18px',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '3px',
                 fontSize: '0.9rem',
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: 'pointer',
                 background: regionFilter === 'nacional' ? '#130f40' : 'transparent',
                 color: regionFilter === 'nacional' ? '#fff' : '#475569',
@@ -301,9 +344,9 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
               style={{
                 padding: '10px 18px',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '3px',
                 fontSize: '0.9rem',
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: 'pointer',
                 background: regionFilter === 'vale' ? '#130f40' : 'transparent',
                 color: regionFilter === 'vale' ? '#fff' : '#475569',
@@ -322,26 +365,24 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Filter size={16} color="#64748b" />
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
               Filtro por Categoria
             </span>
           </div>
           <div style={{ 
             display: 'flex', 
             gap: '8px', 
-            overflowX: 'auto', 
-            paddingBottom: '8px',
-            whiteSpace: 'nowrap',
-            scrollbarWidth: 'thin'
+            flexWrap: 'wrap',
+            paddingBottom: '8px'
           }}>
             <button
               onClick={() => setActiveCategoryTab('all')}
               style={{
                 padding: '8px 16px',
-                borderRadius: '9999px',
+                borderRadius: '3px',
                 border: '1px solid #e2e8f0',
                 fontSize: '0.85rem',
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: 'pointer',
                 background: activeCategoryTab === 'all' ? 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)' : '#fff',
                 color: activeCategoryTab === 'all' ? '#fff' : '#475569',
@@ -362,10 +403,10 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
                   onClick={() => setActiveCategoryTab(cat.id)}
                   style={{
                     padding: '8px 16px',
-                    borderRadius: '9999px',
+                    borderRadius: '3px',
                     border: '1px solid #e2e8f0',
                     fontSize: '0.85rem',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     cursor: 'pointer',
                     background: activeCategoryTab === cat.id ? 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)' : '#fff',
                     color: activeCategoryTab === cat.id ? '#fff' : '#475569',
@@ -381,7 +422,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
                   <span style={{ 
                     fontSize: '0.7rem', 
                     padding: '2px 6px', 
-                    borderRadius: '9999px', 
+                    borderRadius: '3px', 
                     background: activeCategoryTab === cat.id ? 'rgba(255,255,255,0.2)' : '#e2e8f0',
                     color: activeCategoryTab === cat.id ? '#fff' : '#64748b'
                   }}>
@@ -429,14 +470,14 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ fontSize: '2rem' }}>{category.icon}</span>
-                <h3 style={{ fontSize: '1.6rem', fontWeight: 500, color: '#130f40', margin: 0, letterSpacing: '-0.5px' }}>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 400, color: '#130f40', margin: 0, letterSpacing: '-0.5px' }}>
                   {category.title}
                 </h3>
               </div>
               <span style={{ 
                 fontSize: '0.8rem', 
                 color: '#64748b', 
-                fontWeight: 600,
+                fontWeight: 500,
                 background: '#f8fafc',
                 padding: '4px 12px',
                 borderRadius: '6px',
@@ -449,161 +490,148 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
             <div style={{ width: '100%', height: '3px', background: 'linear-gradient(90deg, #7ed6df 0%, #130f40 50%, rgba(126,214,223,0.05) 100%)', borderRadius: '4px' }} />
           </div>
 
-          {/* Grid de Cards Responsivo (3 colunas com gap de 24px) */}
+          {/* Grid de Cards (3 colunas proporcionais preenchendo 100% do espaço) */}
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', 
-            gap: '24px' 
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '24px',
+            width: '100%'
           }}>
             {category.partners.map((partner) => (
-              <div
-                key={partner.id}
-                style={{
-                  background: partner.isEmptySlot ? 'rgba(248, 250, 252, 0.4)' : '#ffffff',
-                  border: partner.isEmptySlot ? '2px dashed rgba(126,214,223,0.5)' : '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  padding: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  position: 'relative',
-                  boxShadow: partner.isEmptySlot ? 'none' : '0 10px 25px rgba(0,0,0,0.01)',
-                  height: '75px',
-                  minHeight: '75px',
-                  overflow: 'hidden'
-                }}
-                onMouseEnter={(e) => {
-                  if (!partner.isEmptySlot) {
-                    e.currentTarget.style.transform = 'translateY(-6px)';
-                    e.currentTarget.style.boxShadow = '0 20px 30px rgba(19, 15, 64, 0.06)';
-                    e.currentTarget.style.borderColor = '#7ed6df';
-                  } else {
-                    e.currentTarget.style.background = 'rgba(126,214,223,0.03)';
-                    e.currentTarget.style.borderColor = 'rgba(126,214,223,0.8)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!partner.isEmptySlot) {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.01)';
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                  } else {
-                    e.currentTarget.style.background = 'rgba(248, 250, 252, 0.4)';
-                    e.currentTarget.style.borderColor = 'rgba(126,214,223,0.5)';
-                  }
-                }}
-              >
-                {/* Badge de Homologação / Região */}
-                {!partner.isEmptySlot ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    {/* Badge de Cobertura Regional vs Nacional */}
-                    <span style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      padding: '3px 8px',
-                      borderRadius: '6px',
-                      background: partner.region === 'vale' ? '#eff6ff' : '#f0fdf4',
-                      color: partner.region === 'vale' ? '#1d4ed8' : '#15803d',
-                      border: partner.region === 'vale' ? '1px solid #bfdbfe' : '1px solid #bbf7d0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      {partner.region === 'vale' ? <MapPin size={10} /> : <Globe size={10} />}
-                      {partner.region === 'vale' ? 'Região Vale' : 'Nacional'}
-                    </span>
-
-                    {/* Selo Homologado Premium */}
-                    <span style={{ 
-                      fontSize: '0.65rem', 
-                      fontWeight: 800, 
-                      letterSpacing: '0.5px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '4px',
-                      background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)',
-                      color: '#fff',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      boxShadow: '0 4px 10px rgba(19, 15, 64, 0.15)'
-                    }}>
-                      <ShieldCheck size={12} color="#7ed6df" /> HOMOLOGADO
-                    </span>
+              <div key={partner.id} style={{ display: 'flex', flexDirection: 'column', gap: '18px', width: '100%' }}>
+                {/* Card Principal */}
+                <div
+                  style={{
+                    background: partner.isEmptySlot ? 'rgba(248, 250, 252, 0.4)' : '#ffffff',
+                    border: partner.isEmptySlot ? '2px dashed rgba(126,214,223,0.5)' : '1px solid #130f40',
+                    borderRadius: '3px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-start',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    boxShadow: partner.isEmptySlot ? 'none' : '0 10px 25px rgba(0,0,0,0.01)',
+                    width: '100%',
+                    height: '150px',
+                    minHeight: '150px',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
+                    cursor: partner.isEmptySlot ? 'pointer' : 'pointer'
+                  }}
+                  onClick={() => {
+                    if (partner.isEmptySlot) {
+                      handleBecomePartner(category.title);
+                    } else {
+                      trackPartnerClick(partner, 'website', category.title);
+                      if (partner.site) window.open(partner.site.startsWith('http') ? partner.site : `https://${partner.site}`, '_blank');
+                    }
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!partner.isEmptySlot) {
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = '0 10px 20px rgba(19, 15, 64, 0.08)';
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                    } else {
+                      e.currentTarget.style.background = 'rgba(126,214,223,0.03)';
+                      e.currentTarget.style.borderColor = 'rgba(126,214,223,0.8)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!partner.isEmptySlot) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.01)';
+                      e.currentTarget.style.borderColor = '#130f40';
+                    } else {
+                      e.currentTarget.style.background = 'rgba(248, 250, 252, 0.4)';
+                      e.currentTarget.style.borderColor = 'rgba(126,214,223,0.5)';
+                    }
+                  }}
+                >
+                  {/* Linha superior: HOMOLOGADO no canto direito */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+                    {!partner.isEmptySlot && (
+                      <span 
+                        onClick={() => {
+                          trackPartnerClick(partner, 'website', category.title);
+                          if (partner.site) window.open(`https://${partner.site}`, '_blank');
+                        }}
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: '#1d4ed8',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '-0.3px'
+                        }}
+                      >
+                        <ShieldCheck size={16} color="#1d4ed8" /> HOMOLOGADO
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <div style={{ marginBottom: '16px' }}>
-                    <span style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      padding: '3px 8px',
-                      borderRadius: '6px',
-                      background: '#f1f5f9',
-                      color: '#475569',
-                      border: '1px solid #cbd5e1'
-                    }}>
-                      DISPONÍVEL
-                    </span>
+
+                  {/* Nome do fornecedor centralizado */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, transform: 'translateY(-12px)' }}>
+                    {partner.isEmptySlot ? (
+                      <h4 
+                        onClick={() => handleBecomePartner(category.title)}
+                        style={{ 
+                          fontSize: '18px', 
+                          fontWeight: 600, 
+                          color: '#94a3b8', 
+                          margin: 0,
+                          cursor: 'pointer',
+                          letterSpacing: '-0.3px',
+                          textAlign: 'center'
+                        }}
+                      >
+                        + Novo Especialista
+                      </h4>
+                    ) : (
+                      <h4 
+                        onClick={() => {
+                          trackPartnerClick(partner, 'website', category.title);
+                          if (partner.site) window.open(`https://${partner.site}`, '_blank');
+                        }}
+                        style={{ 
+                          fontSize: '38px', 
+                          fontWeight: 400, 
+                          color: '#130f40', 
+                          margin: 0,
+                          cursor: 'pointer',
+                          letterSpacing: '-0.5px',
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          width: '100%'
+                        }}
+                        title="Clique para acessar o site"
+                      >
+                        {partner.name}
+                      </h4>
+                    )}
                   </div>
-                )}
+                </div>
 
-                {/* Nome do Parceiro */}
-                <h4 style={{ 
-                  fontSize: '17px', 
-                  fontWeight: 400, 
-                  color: partner.isEmptySlot ? '#94a3b8' : '#130f40', 
-                  margin: '0 0 8px 0',
-                  letterSpacing: '-0.5px'
-                }}>
-                  {partner.name}
-                </h4>
-
-                {/* Descrição / Especialidade */}
-                <p style={{ 
-                  fontSize: '0.9rem', 
-                  color: partner.isEmptySlot ? '#64748b' : '#475569', 
-                  lineHeight: '1.5',
-                  margin: '0 0 16px 0',
-                  flex: 1
-                }}>
-                  {partner.specialty}
-                </p>
-
-                {/* Tag de Localização */}
-                {!partner.isEmptySlot && (
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '4px', 
-                    color: '#64748b', 
-                    fontSize: '0.8rem', 
-                    fontWeight: 500,
-                    marginBottom: '20px'
-                  }}>
-                    <MapPin size={12} />
-                    <span>{partner.location}</span>
-                  </div>
-                )}
-
-                {/* Linha Divisória antes dos botões */}
-                <div style={{ height: '1px', background: '#f1f5f9', width: '100%', marginBottom: '16px' }} />
-
-                {/* Botões e Links de Ação */}
-                <div style={{ marginTop: 'auto' }}>
+                {/* Botão Externo com 18px de distância do card principal */}
+                <div style={{ width: '100%' }}>
                   {partner.isEmptySlot ? (
                     <button 
                       onClick={() => handleBecomePartner(category.title)}
                       style={{ 
                         width: '100%', 
-                        padding: '11px', 
-                        borderRadius: '8px', 
+                        height: '35px', 
+                        padding: '0 8px',
+                        borderRadius: '3px', 
                         border: '1px solid rgba(126,214,223,0.5)', 
                         background: 'rgba(126,214,223,0.04)',
                         color: '#130f40', 
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        fontSize: '15px',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         display: 'flex',
@@ -611,90 +639,38 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
                         justifyContent: 'center',
                         gap: '6px'
                       }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(126,214,223,0.12)';
-                        e.currentTarget.style.borderColor = '#7ed6df';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(126,214,223,0.04)';
-                        e.currentTarget.style.borderColor = 'rgba(126,214,223,0.5)';
-                      }}
+                      title="Anuncie Sua Empresa"
                     >
-                      <Sparkles size={14} color="#f97316" /> Anuncie Sua Empresa
+                      <Sparkles size={12} color="#f97316" /> Anuncie Aqui
                     </button>
                   ) : (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {/* Botão Principal de Redirecionamento para Site */}
-                      <button 
-                        onClick={() => {
-                          trackPartnerClick(partner, 'website', category.title);
-                          window.open(`https://${partner.site}`, '_blank');
-                        }}
-                        style={{ 
-                          flex: 1,
-                          padding: '11px 16px', 
-                          borderRadius: '8px', 
-                          border: 'none', 
-                          background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)', 
-                          color: '#ffffff', 
-                          fontWeight: 600,
-                          fontSize: '0.85rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(19, 15, 64, 0.1)',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = '0 6px 15px rgba(19, 15, 64, 0.15)';
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #1d1959 0%, #364e66 100%)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(19, 15, 64, 0.1)';
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)';
-                        }}
-                      >
-                        <Globe size={15} /> Acesse o Site
-                      </button>
-
-                      {/* Botão de WhatsApp Rápido (Homologados) */}
-                      <button
-                        onClick={() => {
-                          trackPartnerClick(partner, 'whatsapp', category.title);
-                          const text = encodeURIComponent(`Olá! Vi sua empresa no portal Solara Connect e gostaria de falar com o atendimento comercial sobre suprimentos/serviços.`);
-                          window.open(`https://wa.me/5512997184000?text=${text}`, '_blank');
-                        }}
-                        title="Atendimento Rápido WhatsApp"
-                        style={{
-                          background: '#f0fdf4',
-                          border: '1px solid #bbf7d0',
-                          borderRadius: '8px',
-                          width: '40px',
-                          height: '38px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = '#dcfce7';
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = '#f0fdf4';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="#16a34a">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.067 2.875 1.218 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.008c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413"/>
-                        </svg>
-                      </button>
-                    </div>
+                    <button 
+                      onClick={() => {
+                        trackPartnerClick(partner, 'website', category.title);
+                        if (partner.site) window.open(`https://${partner.site}`, '_blank');
+                      }}
+                      style={{ 
+                        width: '100%', 
+                        height: '35px', 
+                        padding: '0 8px',
+                        borderRadius: '3px', 
+                        border: 'none', 
+                        background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', // Verde gradiente horizontal
+                        color: '#ffffff', 
+                        fontWeight: 600,
+                        fontSize: '18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+                      }}
+                      title="Acessar o Site"
+                    >
+                      <Globe size={12} /> Acessar Site
+                    </button>
                   )}
                 </div>
               </div>
