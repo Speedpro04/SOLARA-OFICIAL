@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Globe, ExternalLink, ShieldCheck, Crown, Search, MapPin, Sparkles, Filter, RefreshCw } from 'lucide-react';
+import { Globe, ShieldCheck, Crown, Search, MapPin, Sparkles, Filter } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 interface Partner {
@@ -13,12 +13,6 @@ interface Partner {
   isEmptySlot?: boolean;
 }
 
-interface Category {
-  id: string;
-  title: string;
-  icon: string;
-  partners: Partner[];
-}
 
 const generateEmptySlot = (id: string, categoryTitle: string, region: 'nacional' | 'vale' = 'nacional'): Partner => ({
   id,
@@ -55,7 +49,6 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
   const [activeCategoryTab, setActiveCategoryTab] = useState('all');
   const [regionFilter, setRegionFilter] = useState<'all' | 'nacional' | 'vale'>('all');
   const [partnersList, setPartnersList] = useState<Partner[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPartners = async () => {
@@ -70,8 +63,6 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
         setPartnersList(data || []);
       } catch (err) {
         console.error('Erro ao ler parceiros do Supabase:', err);
-      } finally {
-        setLoading(false);
       }
     };
 
