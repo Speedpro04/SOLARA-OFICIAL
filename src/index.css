@@ -17,7 +17,7 @@
   --foreground: #130f40;
   --secondary: #666666;
   
-  --radius: 16px;
+  --radius: 2px;
   --shadow: 0 8px 30px rgba(19, 15, 64, 0.1);
 }
 
@@ -89,7 +89,7 @@ body {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: 2px;
   background: none;
   border: none;
   color: rgba(255, 255, 255, 0.7);
@@ -125,7 +125,7 @@ body {
   background: rgba(255, 82, 82, 0.1);
   border: 1px solid var(--btn-danger);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: 2px;
   cursor: pointer;
   color: var(--btn-danger);
   font-weight: 700;
@@ -196,7 +196,7 @@ body {
   background: white;
   border: 1.5px solid var(--card-border);
   padding: 20px;
-  border-radius: 14px;
+  border-radius: 2px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -221,7 +221,7 @@ button.primary {
   color: var(--primary);
   border: none;
   padding: 14px 28px;
-  border-radius: 12px;
+  border-radius: 2px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s;
@@ -238,7 +238,7 @@ button.ghost {
   border: 2px solid var(--card-border);
   color: var(--primary);
   padding: 12px 24px;
-  border-radius: 12px;
+  border-radius: 2px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -260,7 +260,7 @@ button.ghost:hover {
 
 .custom-scroll::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
+  border-radius: 2px;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb:hover {

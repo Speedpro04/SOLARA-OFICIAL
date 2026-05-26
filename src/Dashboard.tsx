@@ -39,6 +39,8 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
   const [anamnese, setAnamnese] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [patientSearch, setPatientSearch] = useState("");
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [showGlobalSearchResults, setShowGlobalSearchResults] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSolara, setShowSolara] = useState(false);
   const [activeChat, setActiveChat] = useState<any>(null);
@@ -734,6 +736,13 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
     );
   };
 
+  // Derived Global Search Results
+  const globalSearchResults = globalSearch.trim() === '' ? [] : [
+    ...menuItems.filter(m => m.label.toLowerCase().includes(globalSearch.toLowerCase())).map(m => ({ type: 'menu', id: m.id, label: m.label, icon: m.icon })),
+    ...patientsList.filter(p => p.name.toLowerCase().includes(globalSearch.toLowerCase())).map(p => ({ type: 'patient', id: p.id, label: p.name, data: p })),
+    ...specialistsList.filter(s => s.name.toLowerCase().includes(globalSearch.toLowerCase())).map(s => ({ type: 'specialist', id: s.id, label: s.name }))
+  ].slice(0, 8); // Max 8 results
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: colors.bg, fontFamily: "'Outfit', sans-serif" }}>
       
@@ -742,12 +751,12 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
         <div style={{ marginBottom: 40, padding: '0 12px' }}><Logo size={40} textColor="#fff" text="Solara Connect" /></div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {menuItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, transition: 'all 0.2s', backgroundColor: activeTab === item.id ? 'rgba(126, 214, 223, 0.15)' : 'transparent', color: activeTab === item.id ? colors.accent : 'rgba(255,255,255,0.6)', textAlign: 'left' }}>
+            <button key={item.id} onClick={() => setActiveTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 2, border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, transition: 'all 0.2s', backgroundColor: activeTab === item.id ? 'rgba(126, 214, 223, 0.15)' : 'transparent', color: activeTab === item.id ? colors.accent : 'rgba(255,255,255,0.6)', textAlign: 'left' }}>
               {item.icon} {item.label}
               {activeTab === item.id && <motion.div layoutId="active" style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', backgroundColor: colors.accent }} />}
             </button>
           ))}
-          <button onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, transition: 'all 0.2s', backgroundColor: 'transparent', color: 'rgba(255,255,255,0.4)', marginTop: '24px' }} onMouseEnter={(e) => e.currentTarget.style.color = colors.danger} onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>
+          <button onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 2, border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, transition: 'all 0.2s', backgroundColor: 'transparent', color: 'rgba(255,255,255,0.4)', marginTop: '24px' }} onMouseEnter={(e) => e.currentTarget.style.color = colors.danger} onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>
             <LogOut size={20} /> Sair
           </button>
         </div>
@@ -764,7 +773,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
               placeholder="Buscar..." 
               value={patientSearch}
               onChange={(e) => setPatientSearch(e.target.value)}
-              style={{ width: '100%', padding: '12px 12px 12px 42px', borderRadius: 14, border: 'none', background: '#f1f5f9', outline: 'none', fontSize: '0.9rem', fontWeight: 500 }}
+              style={{ width: '100%', padding: '12px 12px 12px 42px', borderRadius: 2, border: 'none', background: '#f1f5f9', outline: 'none', fontSize: '0.9rem', fontWeight: 500 }}
             />
           </div>
         </div>
@@ -784,7 +793,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
               }}
               style={{ 
                 padding: '16px 12px', 
-                borderRadius: 16, 
+                borderRadius: 2, 
                 cursor: 'pointer', 
                 marginBottom: 8,
                 transition: 'all 0.2s',
@@ -795,7 +804,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
               onMouseLeave={e => selectedPatientId !== patient.id && (e.currentTarget.style.background = 'transparent')}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: colors.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem' }}>
+                <div style={{ width: 44, height: 44, borderRadius: 2, background: colors.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem' }}>
                   {patient.name.charAt(0)}
                 </div>
                 <div style={{ flex: 1 }}>
@@ -831,18 +840,18 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
 
             <div 
               onClick={() => setShowSolara(!showSolara)}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)', padding: '10px 24px', borderRadius: 100, color: '#fff', boxShadow: '0 10px 20px rgba(19,15,64,0.15)', cursor: 'pointer', transition: 'transform 0.2s', border: `1px solid rgba(255,255,255,0.1)` }} 
+              style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)', padding: '10px 24px', borderRadius: 2, color: '#fff', boxShadow: '0 10px 20px rgba(19,15,64,0.15)', cursor: 'pointer', transition: 'transform 0.2s', border: `1px solid rgba(255,255,255,0.1)` }} 
               onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} 
               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
             >
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.accent, boxShadow: `0 0 10px ${colors.accent}` }} />
               <span style={{ fontSize: '0.95rem', fontWeight: 700, letterSpacing: '1px' }}>SOLARA IA</span>
-              <span style={{ fontSize: '0.7rem', color: colors.primary, background: colors.success, padding: '3px 8px', borderRadius: 10, fontWeight: 800 }}>ON</span>
+              <span style={{ fontSize: '0.7rem', color: colors.primary, background: colors.success, padding: '3px 8px', borderRadius: 2, fontWeight: 800 }}>ON</span>
             </div>
 
             <div 
               onClick={() => setActiveTab('partners')}
-              style={{ marginLeft: 16, marginRight: 24, display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(135deg, #7ed6df 0%, #22a6b3 100%)', padding: '10px 24px', borderRadius: 100, color: '#130f40', boxShadow: '0 10px 20px rgba(126,214,223,0.2)', cursor: 'pointer', transition: 'transform 0.2s' }} 
+              style={{ marginLeft: 16, marginRight: 24, display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(135deg, #7ed6df 0%, #22a6b3 100%)', padding: '10px 24px', borderRadius: 2, color: '#130f40', boxShadow: '0 10px 20px rgba(126,214,223,0.2)', cursor: 'pointer', transition: 'transform 0.2s' }} 
               onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} 
               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
             >
@@ -854,12 +863,64 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
               {['reception', 'agenda', 'specialists', 'emr', 'partners'].includes(activeTab) && (
                 <div style={{ position: 'relative', width: 285 }}>
                   <Search size={18} color={colors.textMuted} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
-                  <input type="text" placeholder="Buscar..." style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: 12, border: '1px solid rgba(0,0,0,0.1)', outline: 'none', background: 'rgba(255,255,255,0.5)' }} />
+                  <input 
+                    type="text" 
+                    placeholder="Buscar..." 
+                    value={globalSearch}
+                    onChange={(e) => {
+                      setGlobalSearch(e.target.value);
+                      setShowGlobalSearchResults(true);
+                    }}
+                    onFocus={() => setShowGlobalSearchResults(true)}
+                    onBlur={() => setTimeout(() => setShowGlobalSearchResults(false), 200)}
+                    style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: 2, border: '1px solid rgba(0,0,0,0.1)', outline: 'none', background: 'rgba(255,255,255,0.5)' }} 
+                  />
+                  
+                  {/* Dropdown de Resultados */}
+                  {showGlobalSearchResults && globalSearch.trim() !== '' && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid rgba(0,0,0,0.05)', borderRadius: 2, marginTop: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 1000, maxHeight: 300, overflowY: 'auto' }}>
+                      {globalSearchResults.length === 0 ? (
+                        <div style={{ padding: '16px', color: colors.textMuted, fontSize: '0.9rem', textAlign: 'center' }}>Nenhum resultado encontrado</div>
+                      ) : (
+                        globalSearchResults.map((result, idx) => (
+                          <div 
+                            key={`${result.type}-${result.id}-${idx}`}
+                            onClick={() => {
+                              setGlobalSearch('');
+                              setShowGlobalSearchResults(false);
+                              if (result.type === 'menu') {
+                                setActiveTab(result.id);
+                              } else if (result.type === 'patient') {
+                                setActiveChat(result.data);
+                                setSelectedPatientId(result.id);
+                                setActiveTab('whatsapp');
+                              } else if (result.type === 'specialist') {
+                                setActiveTab('specialists');
+                              }
+                            }}
+                            style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', borderBottom: '1px solid rgba(0,0,0,0.03)', transition: 'background 0.2s' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <div style={{ width: 28, height: 28, borderRadius: 2, background: `${colors.primary}10`, color: colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {result.type === 'menu' ? result.icon : (result.type === 'patient' ? <Users size={14} /> : <Stethoscope size={14} />)}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: colors.primary }}>{result.label}</div>
+                              <div style={{ fontSize: '0.7rem', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {result.type === 'menu' ? 'Menu' : (result.type === 'patient' ? 'Cliente' : 'Especialista')}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               
               {activeTab === 'reports' ? (
-                <button onClick={() => window.print()} style={{ background: '#fff', color: colors.primary, border: `1px solid ${colors.primary}20`, padding: '12px 24px', borderRadius: 12, fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 4px 10px rgba(0,0,0,0.05)` }}>
+                <button onClick={() => window.print()} style={{ background: '#fff', color: colors.primary, border: `1px solid ${colors.primary}20`, padding: '12px 24px', borderRadius: 2, fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 4px 10px rgba(0,0,0,0.05)` }}>
                   <Printer size={20} /> Exportar Relatório (PDF)
                 </button>
               ) : activeTab === 'specialists' ? (
@@ -869,11 +930,11 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   } else {
                     setShowSpecialistModal(true);
                   }
-                }} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 12, fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 10px 20px ${colors.primary}30` }}>
+                }} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 2, fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 10px 20px ${colors.primary}30` }}>
                   <Plus size={20} /> Novo Especialista
                 </button>
               ) : (
-                <button onClick={() => setShowModal(true)} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 12, fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 10px 20px ${colors.primary}30` }}>
+                <button onClick={() => setShowModal(true)} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 2, fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 10px 20px ${colors.primary}30` }}>
                   <UserPlus size={20} /> {activeTab === 'agenda' ? 'Novo Agendamento' : 'Check-in Rápido'}
                 </button>
               )}
@@ -897,9 +958,9 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     { label: 'Urgências', value: '01', sub: 'Prioridade Alta', icon: <AlertCircle />, color: colors.danger },
                     { label: 'Confirmados', value: '42', sub: 'Total hoje', icon: <Check />, color: colors.primary },
                   ].map((s, i) => (
-                    <div key={i} style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                    <div key={i} style={{ background: '#fff', padding: '24px', borderRadius: 2, border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <div style={{ width: 44, height: 44, borderRadius: 12, background: `${s.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>{s.icon}</div>
+                        <div style={{ width: 44, height: 44, borderRadius: 2, background: `${s.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>{s.icon}</div>
                         <div style={{ textAlign: 'right' }}>
                           <div style={{ fontSize: '1.6rem', fontWeight: 600, color: colors.primary }}>{s.value}</div>
                           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: s.color }}>{s.sub}</div>
@@ -913,12 +974,12 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32 }}>
                   
                   {/* Clientes na Fila */}
-                  <div style={{ background: '#fff', borderRadius: 28, border: '1px solid rgba(0,0,0,0.05)', padding: '32px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+                  <div style={{ background: '#fff', borderRadius: 2, border: '1px solid rgba(0,0,0,0.05)', padding: '32px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
                       <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: colors.primary }}>Fila de Atendimento</h3>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button style={{ background: '#f1f5f9', border: 'none', padding: '8px 16px', borderRadius: 10, fontSize: '0.8rem', fontWeight: 700, color: colors.textMuted }}>Filtros</button>
-                        <button style={{ background: '#f1f5f9', border: 'none', padding: '8px 16px', borderRadius: 10, fontSize: '0.8rem', fontWeight: 700, color: colors.textMuted }}>Ver Tudo</button>
+                        <button style={{ background: '#f1f5f9', border: 'none', padding: '8px 16px', borderRadius: 2, fontSize: '0.8rem', fontWeight: 700, color: colors.textMuted }}>Filtros</button>
+                        <button style={{ background: '#f1f5f9', border: 'none', padding: '8px 16px', borderRadius: 2, fontSize: '0.8rem', fontWeight: 700, color: colors.textMuted }}>Ver Tudo</button>
                       </div>
                     </div>
 
@@ -927,8 +988,8 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                         <div style={{ textAlign: 'center', padding: '40px', color: colors.textMuted }}>Nenhum cliente na fila.</div>
                       ) : (
                         appointmentsList.map((app) => (
-                          <motion.div key={app.id} whileHover={{ x: 10 }} style={{ display: 'flex', alignItems: 'center', padding: '20px', borderRadius: 20, background: '#fff', border: `1px solid #f1f5f9`, boxShadow: '0 4px 6px rgba(0,0,0,0.01)' }}>
-                            <div style={{ width: 48, height: 48, borderRadius: 14, background: colors.primary, color: colors.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, marginRight: 20 }}>{app.patients?.name?.charAt(0) || 'P'}</div>
+                          <motion.div key={app.id} whileHover={{ x: 10 }} style={{ display: 'flex', alignItems: 'center', padding: '20px', borderRadius: 2, background: '#fff', border: `1px solid #f1f5f9`, boxShadow: '0 4px 6px rgba(0,0,0,0.01)' }}>
+                            <div style={{ width: 48, height: 48, borderRadius: 2, background: colors.primary, color: colors.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, marginRight: 20 }}>{app.patients?.name?.charAt(0) || 'P'}</div>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontWeight: 600, color: colors.primary, fontSize: '20px', marginBottom: 4 }}>{app.patients?.name}</div>
                               <div style={{ fontSize: '0.85rem', color: colors.textMuted, display: 'flex', gap: 12 }}>
@@ -944,7 +1005,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                                 color: app.insurance === 'Particular' ? colors.success : colors.accent, 
                                 background: app.insurance === 'Particular' ? `${colors.success}15` : `${colors.accent}15`, 
                                 padding: '4px 12px', 
-                                borderRadius: 8, 
+                                borderRadius: 2, 
                                 marginTop: 6,
                                 border: `1px solid ${app.insurance === 'Particular' ? colors.success + '30' : colors.accent + '30'}`
                               }}>
@@ -959,7 +1020,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
 
                   {/* Status dos Especialistas */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    <div style={{ background: colors.primary, borderRadius: 28, padding: '28px', color: '#fff', boxShadow: `0 20px 40px ${colors.primary}40` }}>
+                    <div style={{ background: colors.primary, borderRadius: 2, padding: '28px', color: '#fff', boxShadow: `0 20px 40px ${colors.primary}40` }}>
                       <h3 style={{ fontSize: '1.3rem', fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}><Stethoscope size={20} color={colors.accent} /> Especialistas</h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                         {specialistsList.length === 0 ? (
@@ -981,7 +1042,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                       </div>
                     </div>
 
-                    <div style={{ background: '#fff', borderRadius: 28, border: '1px solid rgba(0,0,0,0.05)', padding: '28px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+                    <div style={{ background: '#fff', borderRadius: 2, border: '1px solid rgba(0,0,0,0.05)', padding: '28px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
                       <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: colors.primary, marginBottom: 20 }}>Metas do Dia</h3>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                         <DonutChart percent={75} color={colors.success} label="Consultas" />
@@ -1006,12 +1067,12 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     { label: 'Taxa de Retorno', value: '12%', color: colors.success, icon: <CheckCircle2 size={24} />, desc: '+2% este mês' },
                     { label: 'Recuperado (Mês)', value: 'R$ 8.200', color: colors.accent, icon: <Activity size={24} />, desc: 'Meta: R$ 10.000' }
                   ].map((stat, i) => (
-                    <div key={i} style={{ background: '#fff', padding: 24, borderRadius: 28, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                    <div key={i} style={{ background: '#fff', padding: 24, borderRadius: 2, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                        <div style={{ width: 48, height: 48, borderRadius: 14, background: `${stat.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 2, background: `${stat.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {React.cloneElement(stat.icon as React.ReactElement<any>, { color: stat.color })}
                         </div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: stat.color, background: `${stat.color}10`, padding: '4px 10px', borderRadius: 8 }}>AO VIVO</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: stat.color, background: `${stat.color}10`, padding: '4px 10px', borderRadius: 2 }}>AO VIVO</div>
                       </div>
                       <div style={{ fontSize: '2rem', fontWeight: 600, color: colors.primary, marginBottom: 4 }}>{stat.value}</div>
                       <div style={{ fontSize: '20px', fontWeight: 600, color: colors.primary }}>{stat.label}</div>
@@ -1023,14 +1084,14 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 32 }}>
                   
                   {/* Inactive Patients List */}
-                  <div style={{ background: '#fff', borderRadius: 32, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)' }}>
+                  <div style={{ background: '#fff', borderRadius: 2, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
                       <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: colors.primary, display: 'flex', alignItems: 'center', gap: 12 }}>
                         <Users size={24} color={colors.accent} /> Clientes para Reativar
                       </h3>
                       <div style={{ display: 'flex', gap: 10 }}>
-                        <button style={{ padding: '8px 16px', borderRadius: 10, border: `1px solid rgba(0,0,0,0.1)`, background: '#f8fafc', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>Filtrar por Tempo</button>
-                        <button style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: colors.primary, color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>Exportar Lista</button>
+                        <button style={{ padding: '8px 16px', borderRadius: 2, border: `1px solid rgba(0,0,0,0.1)`, background: '#f8fafc', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>Filtrar por Tempo</button>
+                        <button style={{ padding: '8px 16px', borderRadius: 2, border: 'none', background: colors.primary, color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>Exportar Lista</button>
                       </div>
                     </div>
 
@@ -1041,8 +1102,8 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                         { name: 'Marcos Braz', lastVisit: '95 dias atrás', procedure: 'Limpeza e Profilaxia', value: 'R$ 350', risk: 'Médio', cpf: '456.789.123-03' },
                         { name: 'Luciana Costa', lastVisit: '210 dias atrás', procedure: 'Clareamento Laser', value: 'R$ 1.200', risk: 'Crítico', cpf: '321.654.987-04' },
                       ].map((p, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', background: '#f8fafc', borderRadius: 20, border: '1px solid transparent', transition: 'all 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.borderColor = colors.accent}>
-                          <div style={{ width: 44, height: 44, borderRadius: 14, background: colors.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, marginRight: 16 }}>{p.name.charAt(0)}</div>
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', background: '#f8fafc', borderRadius: 2, border: '1px solid transparent', transition: 'all 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.borderColor = colors.accent}>
+                          <div style={{ width: 44, height: 44, borderRadius: 2, background: colors.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, marginRight: 16 }}>{p.name.charAt(0)}</div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 600, color: colors.primary, fontSize: '20px' }}>{p.name}</div>
                             <div style={{ fontSize: '0.9rem', color: colors.textMuted }}>CPF: {p.cpf || '000.000.000-00'} • {p.procedure}</div>
@@ -1052,7 +1113,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                             <div style={{ fontSize: '1.2rem', fontWeight: 600, color: colors.primary }}>{p.value}</div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: p.risk === 'Crítico' ? colors.danger : colors.warn }}>Risco {p.risk}</div>
                           </div>
-                          <button onClick={() => alert('Mensagem de recuperação inteligente enviada via WhatsApp para ' + p.name + '!')} style={{ background: colors.success, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 12, fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 8px 16px ${colors.success}30` }}>
+                          <button onClick={() => alert('Mensagem de recuperação inteligente enviada via WhatsApp para ' + p.name + '!')} style={{ background: colors.success, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 2, fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 8px 16px ${colors.success}30` }}>
                             <MessageSquare size={16} /> Recuperar
                           </button>
                         </div>
@@ -1062,7 +1123,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
 
                   {/* Campaigns Sidebar */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    <div style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, #1e1b4b 100%)`, borderRadius: 32, padding: 32, color: '#fff', boxShadow: `0 20px 40px ${colors.primary}40`, position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, #1e1b4b 100%)`, borderRadius: 2, padding: 32, color: '#fff', boxShadow: `0 20px 40px ${colors.primary}40`, position: 'relative', overflow: 'hidden' }}>
                       <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, background: colors.accent, filter: 'blur(100px)', opacity: 0.15 }}></div>
                       <h3 style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>Campanhas Inteligentes</h3>
                       <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', marginBottom: 24, lineHeight: 1.6 }}>Selecione um modelo de campanha e deixe a IA da Solara cuidar das mensagens.</p>
@@ -1073,19 +1134,19 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                           { title: 'Fechamento de Orçamento', desc: 'Follow-up para orçamentos pendentes', color: colors.success },
                           { title: 'Promoção Especial', desc: 'Envio em massa para toda a base', color: colors.warn }
                         ].map((c, i) => (
-                          <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>
+                          <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 2, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>
                             <div style={{ fontWeight: 600, fontSize: '20px', color: '#fff', marginBottom: 4 }}>{c.title}</div>
                             <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>{c.desc}</div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span style={{ fontSize: '0.75rem', color: c.color, fontWeight: 700 }}>Disponível</span>
-                              <button style={{ background: 'transparent', border: `1px solid ${c.color}`, color: c.color, padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700 }}>Configurar</button>
+                              <button style={{ background: 'transparent', border: `1px solid ${c.color}`, color: c.color, padding: '4px 12px', borderRadius: 2, fontSize: '0.75rem', fontWeight: 700 }}>Configurar</button>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <div style={{ background: '#fff', borderRadius: 32, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)', textAlign: 'center' }}>
+                    <div style={{ background: '#fff', borderRadius: 2, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)', textAlign: 'center' }}>
                       <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                         <Target size={32} color={colors.primary} />
                       </div>
@@ -1113,16 +1174,16 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   return statusMap.map(col => {
                     const items = appointmentsList.filter(a => col.statuses.includes(a.status));
                     return (
-                      <div key={col.id} style={{ background: '#fff', backgroundImage: col.bg, borderRadius: 28, padding: '24px', display: 'flex', flexDirection: 'column', gap: 20, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)', position: 'relative', overflow: 'hidden' }}>
+                      <div key={col.id} style={{ background: '#fff', backgroundImage: col.bg, borderRadius: 2, padding: '24px', display: 'flex', flexDirection: 'column', gap: 20, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: col.color }} />
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 4px 16px', borderBottom: '1px dashed rgba(0,0,0,0.05)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 12, background: `${col.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 2, background: `${col.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <Users size={18} color={col.color} />
                             </div>
                             <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: colors.primary }}>{col.label}</h3>
                           </div>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: col.color, background: `${col.color}15`, padding: '6px 14px', borderRadius: 12 }}>{items.length}</span>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: col.color, background: `${col.color}15`, padding: '6px 14px', borderRadius: 2 }}>{items.length}</span>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', paddingBottom: '20px', paddingRight: '4px' }}>
@@ -1138,21 +1199,21 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                                   key={item.id} 
                                   layout
                                   whileHover={{ y: -4, boxShadow: '0 12px 24px -4px rgba(0,0,0,0.1)' }}
-                                  style={{ background: '#fff', padding: '20px', borderRadius: 20, boxShadow: '0 8px 20px -8px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', overflow: 'hidden', cursor: 'default' }}
+                                  style={{ background: '#fff', padding: '20px', borderRadius: 2, boxShadow: '0 8px 20px -8px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', overflow: 'hidden', cursor: 'default' }}
                                 >
                                   <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: col.color, opacity: 0.5 }} />
                                   
                                   {/* Selo de Confirmação Solara */}
                                   {item.status === 'confirmed' && (
-                                    <div style={{ position: 'absolute', top: 12, right: 12, background: colors.success, color: '#fff', fontSize: '0.65rem', fontWeight: 900, padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4, boxShadow: `0 4px 10px ${colors.success}30` }}>
+                                    <div style={{ position: 'absolute', top: 12, right: 12, background: colors.success, color: '#fff', fontSize: '0.65rem', fontWeight: 900, padding: '4px 8px', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 4, boxShadow: `0 4px 10px ${colors.success}30` }}>
                                       <CheckCircle2 size={10} /> CLIENTE CONFIRMADO
                                     </div>
                                   )}
 
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 8 }}>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: colors.primary, background: '#f1f5f9', padding: '6px 12px', borderRadius: 8, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{item.type || 'Consulta'}</span>
-                                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: colors.primary, display: 'flex', alignItems: 'center', gap: 6, background: `${colors.accent}15`, padding: '4px 10px', borderRadius: 8 }}><Clock size={14} color={colors.accent} /> {time}</span>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: item.payment_status === 'pago' ? colors.success : colors.danger, background: item.payment_status === 'pago' ? `${colors.success}15` : `${colors.danger}15`, padding: '4px 8px', borderRadius: 6 }}>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: colors.primary, background: '#f1f5f9', padding: '6px 12px', borderRadius: 2, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{item.type || 'Consulta'}</span>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: colors.primary, display: 'flex', alignItems: 'center', gap: 6, background: `${colors.accent}15`, padding: '4px 10px', borderRadius: 2 }}><Clock size={14} color={colors.accent} /> {time}</span>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: item.payment_status === 'pago' ? colors.success : colors.danger, background: item.payment_status === 'pago' ? `${colors.success}15` : `${colors.danger}15`, padding: '4px 8px', borderRadius: 2 }}>
                                       {item.payment_status === 'pago' ? 'PAGO' : 'PENDENTE'}
                                     </div>
                                   </div>
@@ -1163,7 +1224,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                                       </div>
                                       <div style={{ fontWeight: 600, color: colors.primary, fontSize: '1.1rem' }}>{patientName}</div>
                                     </div>
-                                    <div style={{ fontSize: '0.85rem', color: colors.textMuted, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 500, background: '#f8fafc', padding: '8px 12px', borderRadius: 10, marginBottom: 8 }}>
+                                    <div style={{ fontSize: '0.85rem', color: colors.textMuted, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 500, background: '#f8fafc', padding: '8px 12px', borderRadius: 2, marginBottom: 8 }}>
                                       <Stethoscope size={16} color={colors.accent} /> {doctorName}
                                     </div>
                                     <div style={{ 
@@ -1175,7 +1236,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                                       fontWeight: 800, 
                                       background: item.insurance === 'Particular' ? `${colors.success}10` : `${colors.accent}10`, 
                                       padding: '8px 12px', 
-                                      borderRadius: 10, 
+                                      borderRadius: 2, 
                                       marginBottom: 12,
                                       border: `1px solid ${item.insurance === 'Particular' ? colors.success + '30' : colors.accent + '30'}`
                                     }}>
@@ -1186,7 +1247,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                                     </div>
                                   </div>
                                   {col.nextStatus && (
-                                    <button onClick={() => handleUpdateAppointmentStatus(item.id, col.nextStatus!)} style={{ background: `${col.color}15`, color: col.color, border: `1px solid ${col.color}40`, padding: '8px 16px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginLeft: 8, transition: 'all 0.2s' }}>
+                                    <button onClick={() => handleUpdateAppointmentStatus(item.id, col.nextStatus!)} style={{ background: `${col.color}15`, color: col.color, border: `1px solid ${col.color}40`, padding: '8px 16px', borderRadius: 2, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginLeft: 8, transition: 'all 0.2s' }}>
                                       <Check size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />{col.nextLabel}
                                     </button>
                                   )}
@@ -1216,7 +1277,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     onClick={() => setShowRecordModal(true)}
                     style={{ 
                       background: `linear-gradient(135deg, ${colors.primary} 0%, #2c3e50 100%)`, 
-                      color: '#fff', border: 'none', padding: '16px 28px', borderRadius: 18, 
+                      color: '#fff', border: 'none', padding: '16px 28px', borderRadius: 2, 
                       fontWeight: 700, fontSize: '1rem', cursor: 'pointer', 
                       display: 'flex', alignItems: 'center', gap: 12, 
                       boxShadow: `0 15px 30px ${colors.primary}40`,
@@ -1249,12 +1310,12 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                         const specialist = lastApp ? specialistsList.find(s => s.id === lastApp.doctor_id) : null;
 
                         return (
-                          <div style={{ background: colors.primary, borderRadius: 28, padding: 32, color: '#fff', textAlign: 'center', boxShadow: `0 20px 40px ${colors.primary}40`, marginBottom: 8 }}>
+                          <div style={{ background: colors.primary, borderRadius: 2, padding: 32, color: '#fff', textAlign: 'center', boxShadow: `0 20px 40px ${colors.primary}40`, marginBottom: 8 }}>
                             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 600, margin: '0 auto 16px' }}>{activePatient.name.charAt(0)}</div>
                             <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>{activePatient.name}</h3>
                             <div style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: 20 }}>{activePatient.age || '--'} Anos • {activePatient.insurance || 'Particular'}</div>
                             
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 16, textAlign: 'left', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 2, textAlign: 'left', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <span style={{ opacity: 0.6 }}>WhatsApp:</span> 
                                 <span>{activePatient.phone || '--'}</span>
@@ -1272,7 +1333,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                         );
                       })()}
 
-                    <div style={{ background: '#fff', borderRadius: 28, padding: '24px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', height: '100%', flex: 1, overflow: 'hidden' }}>
+                    <div style={{ background: '#fff', borderRadius: 2, padding: '24px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', height: '100%', flex: 1, overflow: 'hidden' }}>
                       <h4 style={{ fontSize: '1.1rem', fontWeight: 600, color: colors.primary, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Users size={20} color={colors.accent} /> Próximos da Fila
                       </h4>
@@ -1295,7 +1356,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                               }}
                               style={{ 
                                 padding: '16px', 
-                                borderRadius: 18, 
+                                borderRadius: 2, 
                                 border: '2px solid transparent', 
                                 background: '#f8fafc',
                                 cursor: 'pointer',
@@ -1333,7 +1394,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     
                     if (!activePatient) {
                       return (
-                        <div style={{ background: '#fff', borderRadius: 28, padding: '100px 60px', textAlign: 'center', border: '1px dashed rgba(0,0,0,0.1)', flex: 1 }}>
+                        <div style={{ background: '#fff', borderRadius: 2, padding: '100px 60px', textAlign: 'center', border: '1px dashed rgba(0,0,0,0.1)', flex: 1 }}>
                           <div style={{ width: 80, height: 80, borderRadius: '50%', background: `${colors.accent}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                             <Users size={40} color={colors.accent} />
                           </div>
@@ -1344,7 +1405,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     }
 
                     return (
-                      <div style={{ background: '#fff', borderRadius: 28, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ background: '#fff', borderRadius: 2, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)', flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <h3 style={{ fontSize: '1.3rem', fontWeight: 600, color: colors.primary, display: 'flex', alignItems: 'center', gap: 10 }}><FileText size={22} color={colors.accent} /> Evolução Clínica</h3>
@@ -1359,14 +1420,14 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                             })()}
                           </div>
                           <div style={{ display: 'flex', gap: 12 }}>
-                            <button onClick={() => setShowPrescriptionModal(true)} style={{ background: colors.success, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 12, fontWeight: 600, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={20} /> Receita</button>
-                            <button onClick={() => setShowSignatureModal(true)} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 12, fontWeight: 600, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}><Check size={20} /> Assinar e Salvar</button>
+                            <button onClick={() => setShowPrescriptionModal(true)} style={{ background: colors.success, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 2, fontWeight: 600, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={20} /> Receita</button>
+                            <button onClick={() => setShowSignatureModal(true)} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 2, fontWeight: 600, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}><Check size={20} /> Assinar e Salvar</button>
                           </div>
                         </div>
                         
                         <textarea 
                           placeholder="Descreva o atendimento, queixas do cliente e conduta médica..." 
-                          style={{ flex: 1, minHeight: '400px', width: '100%', border: '1px solid rgba(0,0,0,0.05)', borderRadius: 20, padding: 24, outline: 'none', resize: 'none', background: '#f8fafc', fontSize: '1.1rem', color: colors.text, fontFamily: 'inherit', lineHeight: 1.6 }}
+                          style={{ flex: 1, minHeight: '400px', width: '100%', border: '1px solid rgba(0,0,0,0.05)', borderRadius: 2, padding: 24, outline: 'none', resize: 'none', background: '#f8fafc', fontSize: '1.1rem', color: colors.text, fontFamily: 'inherit', lineHeight: 1.6 }}
                           value={anamnese}
                           onChange={(e) => setAnamnese(e.target.value)}
                         />
@@ -1381,7 +1442,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
             {/* VIEW: WHATSAPP (EXPANDIDO) */}
             {activeTab === 'whatsapp' && (
               <motion.div key="whatsapp" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ height: 'calc(100vh - 200px)', display: 'flex', justifyContent: 'center', paddingBottom: 20 }}>
-                <div style={{ width: '100%', maxWidth: 960, background: '#fff', borderRadius: 32, border: '12px solid #1e293b', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)', display: 'flex', overflow: 'hidden', position: 'relative' }}>
+                <div style={{ width: '100%', maxWidth: 960, background: '#fff', borderRadius: 2, border: '12px solid #1e293b', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)', display: 'flex', overflow: 'hidden', position: 'relative' }}>
                   
                   {/* WhatsApp Web Style UI */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#e5ddd5', position: 'relative' }}>
@@ -1401,7 +1462,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                        </div>
 
                        {activeChat && (
-                         <button style={{ background: '#fff', color: colors.danger, border: `1px solid ${colors.danger}40`, padding: '10px 16px', borderRadius: 12, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 10px rgba(255, 82, 82, 0.1)' }}>
+                         <button style={{ background: '#fff', color: colors.danger, border: `1px solid ${colors.danger}40`, padding: '10px 16px', borderRadius: 2, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 10px rgba(255, 82, 82, 0.1)' }}>
                            <UserCog size={18} /> Humano Atender
                          </button>
                        )}
@@ -1419,7 +1480,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                          </div>
                        ) : (
                          <>
-                           <div style={{ alignSelf: 'center', background: '#fff', padding: '6px 12px', borderRadius: 8, fontSize: '0.75rem', color: '#54656f', boxShadow: '0 1px 1px rgba(0,0,0,0.1)', marginBottom: 20, fontWeight: 600, textTransform: 'uppercase' }}>Hoje</div>
+                           <div style={{ alignSelf: 'center', background: '#fff', padding: '6px 12px', borderRadius: 2, fontSize: '0.75rem', color: '#54656f', boxShadow: '0 1px 1px rgba(0,0,0,0.1)', marginBottom: 20, fontWeight: 600, textTransform: 'uppercase' }}>Hoje</div>
                            
                            {messages.map((m, idx) => {
                              const isMe = m.sender_type !== 'patient';
@@ -1459,7 +1520,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                       }}
                       style={{ padding: '10px 16px', background: '#f0f2f5', display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 10 }}
                     >
-                       <div style={{ flex: 1, background: '#fff', borderRadius: 8, padding: '4px 12px', display: 'flex', alignItems: 'center', boxShadow: '0 1px 1px rgba(0,0,0,0.05)', border: voiceError ? '2px solid #ef4444' : (isListening && voiceTarget === 'whatsapp') ? `2px solid ${colors.success}` : 'none' }}>
+                       <div style={{ flex: 1, background: '#fff', borderRadius: 2, padding: '4px 12px', display: 'flex', alignItems: 'center', boxShadow: '0 1px 1px rgba(0,0,0,0.05)', border: voiceError ? '2px solid #ef4444' : (isListening && voiceTarget === 'whatsapp') ? `2px solid ${colors.success}` : 'none' }}>
                          <button 
                            type="button"
                            onClick={toggleVoiceWA} 
@@ -1491,7 +1552,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                        <button 
                          type="submit"
                          disabled={!activeChat || !newMessage.trim()}
-                         style={{ width: 45, height: 45, borderRadius: 12, background: (activeChat && newMessage.trim()) ? colors.success : '#cbd5e1', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: (activeChat && newMessage.trim()) ? 'pointer' : 'default', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', transition: 'background 0.3s' }}
+                         style={{ width: 45, height: 45, borderRadius: 2, background: (activeChat && newMessage.trim()) ? colors.success : '#cbd5e1', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: (activeChat && newMessage.trim()) ? 'pointer' : 'default', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', transition: 'background 0.3s' }}
                        >
                          <Send size={24} />
                        </button>
@@ -1507,20 +1568,20 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
                   
                   {/* Automações Ativas */}
-                  <div style={{ background: '#fff', borderRadius: 28, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)' }}>
+                  <div style={{ background: '#fff', borderRadius: 2, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)' }}>
                     <h3 style={{ fontSize: '1.4rem', fontWeight: 600, color: colors.primary, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
                       <Zap size={20} color={colors.accent} /> Motores de Automação
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                       {automations.map((auto) => (
-                        <div key={auto.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: auto.active ? `${colors.success}10` : '#f8fafc', borderRadius: 16, border: `1px solid ${auto.active ? colors.success + '30' : 'rgba(0,0,0,0.05)'}` }}>
+                        <div key={auto.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: auto.active ? `${colors.success}10` : '#f8fafc', borderRadius: 2, border: `1px solid ${auto.active ? colors.success + '30' : 'rgba(0,0,0,0.05)'}` }}>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: '1.1rem', color: auto.active ? colors.primary : colors.textMuted }}>{auto.title}</div>
                             <div style={{ fontSize: '0.95rem', fontWeight: 500, color: colors.textMuted, marginTop: 4 }}>{auto.desc}</div>
                           </div>
                           <div 
                             onClick={() => setAutomations(prev => prev.map(a => a.id === auto.id ? { ...a, active: !a.active } : a))}
-                            style={{ width: 44, height: 24, borderRadius: 12, background: auto.active ? colors.success : '#e2e8f0', position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}
+                            style={{ width: 44, height: 24, borderRadius: 2, background: auto.active ? colors.success : '#e2e8f0', position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}
                           >
                             <div style={{ position: 'absolute', top: 2, left: auto.active ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,0.2)', transition: 'all 0.3s' }} />
                           </div>
@@ -1530,7 +1591,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   </div>
 
                   {/* Log em Tempo Real */}
-                  <div style={{ background: '#130f40', borderRadius: 28, padding: '32px', color: '#fff', boxShadow: '0 20px 40px rgba(19,15,64,0.3)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ background: '#130f40', borderRadius: 2, padding: '32px', color: '#fff', boxShadow: '0 20px 40px rgba(19,15,64,0.3)', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, right: 0, width: 200, height: 200, background: 'radial-gradient(circle, rgba(126, 214, 223, 0.15) 0%, rgba(0,0,0,0) 70%)', transform: 'translate(50%, -50%)' }} />
                     <h3 style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
                       <Zap size={20} color={colors.accent} /> Log do Cérebro Ativo
@@ -1566,10 +1627,10 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                    <div style={{ gridColumn: 'span 3', textAlign: 'center', padding: '40px', color: colors.textMuted }}>Nenhum especialista cadastrado.</div>
                 ) : (
                   specialistsList.map((doc, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 28, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)', position: 'relative', overflow: 'hidden' }}>
+                    <div key={i} style={{ background: '#fff', borderRadius: 2, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 35px rgba(0,0,0,0.02)', position: 'relative', overflow: 'hidden' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: doc.active ? colors.success : colors.textMuted }} />
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-                        <div style={{ width: 60, height: 60, borderRadius: 20, background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primary}dd 100%)`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 700, boxShadow: `0 10px 20px ${colors.primary}30` }}>
+                        <div style={{ width: 60, height: 60, borderRadius: 2, background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primary}dd 100%)`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 700, boxShadow: `0 10px 20px ${colors.primary}30` }}>
                           {doc.name.charAt(0)}
                         </div>
                         <div>
@@ -1577,7 +1638,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                           <div style={{ fontSize: '0.85rem', fontWeight: 600, color: colors.accent }}>{doc.specialty}</div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f8fafc', padding: '16px', borderRadius: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f8fafc', padding: '16px', borderRadius: 2 }}>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: '1.2rem', fontWeight: 700, color: colors.primary }}>{doc.rating || 5.0}</div>
                           <div style={{ fontSize: '0.7rem', fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase' }}>Rating</div>
@@ -1597,7 +1658,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
             {/* VIEW: CONTACTS (LISTA DE PACIENTES) */}
             {activeTab === 'contacts' && (
               <motion.div key="contacts" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-                <div style={{ background: '#fff', borderRadius: 32, padding: '40px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 20px 50px rgba(0,0,0,0.03)' }}>
+                <div style={{ background: '#fff', borderRadius: 2, padding: '40px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 20px 50px rgba(0,0,0,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
                     <h2 style={{ fontSize: '2rem', fontWeight: 600, color: colors.primary }}>Central de Clientes</h2>
                     <div style={{ display: 'flex', gap: 16 }}>
@@ -1606,10 +1667,10 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                         <input 
                           type="text" 
                           placeholder="Buscar por nome, CPF ou telefone..." 
-                          style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: 16, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1rem', background: '#f8fafc' }} 
+                          style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1rem', background: '#f8fafc' }} 
                         />
                       </div>
-                      <button onClick={() => setShowModal(true)} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '16px 32px', borderRadius: 16, fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button onClick={() => setShowModal(true)} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '16px 32px', borderRadius: 2, fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <Plus size={20} /> Novo Cliente
                       </button>
                     </div>
@@ -1628,10 +1689,10 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                       </thead>
                       <tbody>
                         {patientsList.map((p) => (
-                          <tr key={p.id} style={{ background: '#f8fafc', borderRadius: 20, transition: 'all 0.2s' }}>
+                          <tr key={p.id} style={{ background: '#f8fafc', borderRadius: 2, transition: 'all 0.2s' }}>
                             <td style={{ padding: '24px', borderRadius: '20px 0 0 20px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                <div style={{ width: 44, height: 44, borderRadius: 12, background: colors.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '1.2rem' }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 2, background: colors.primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '1.2rem' }}>
                                   {p.name.charAt(0)}
                                 </div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: 600, color: colors.primary }}>{p.name}</div>
@@ -1640,12 +1701,12 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                             <td style={{ padding: '24px', fontSize: '1.1rem', color: colors.textMuted, fontWeight: 500 }}>{p.cpf || '---.---.----00'}</td>
                             <td style={{ padding: '24px', fontSize: '1.1rem', color: colors.textMuted, fontWeight: 500 }}>{p.phone}</td>
                             <td style={{ padding: '24px' }}>
-                              <span style={{ background: colors.success + '20', color: colors.success, padding: '8px 16px', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600 }}>Ativo</span>
+                              <span style={{ background: colors.success + '20', color: colors.success, padding: '8px 16px', borderRadius: 2, fontSize: '0.9rem', fontWeight: 600 }}>Ativo</span>
                             </td>
                             <td style={{ padding: '24px', borderRadius: '0 20px 20px 0', textAlign: 'center' }}>
                               <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                                <button onClick={() => { setSelectedPatientId(p.id); setActiveTab('emr'); }} style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px', borderRadius: 12, cursor: 'pointer', color: colors.primary }} title="Ver Prontuário"><FileText size={20} /></button>
-                                <button onClick={() => { setActiveChat(p); setActiveTab('whatsapp'); }} style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px', borderRadius: 12, cursor: 'pointer', color: colors.success }} title="Enviar Mensagem"><MessageSquare size={20} /></button>
+                                <button onClick={() => { setSelectedPatientId(p.id); setActiveTab('emr'); }} style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px', borderRadius: 2, cursor: 'pointer', color: colors.primary }} title="Ver Prontuário"><FileText size={20} /></button>
+                                <button onClick={() => { setActiveChat(p); setActiveTab('whatsapp'); }} style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px', borderRadius: 2, cursor: 'pointer', color: colors.success }} title="Enviar Mensagem"><MessageSquare size={20} /></button>
                               </div>
                             </td>
                           </tr>
@@ -1668,7 +1729,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     { label: 'NPS (Satisfação)', value: '9.8', trend: '+0.5', color: colors.warn },
                     { label: 'Perdas Financeiras', value: 'R$ 1.200', trend: '-R$ 400', color: colors.danger },
                   ].map((stat, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 24, padding: '24px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                    <div key={i} style={{ background: '#fff', borderRadius: 2, padding: '24px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
                       <div style={{ fontSize: '20px', fontWeight: 600, color: colors.textMuted, marginBottom: 12 }}>{stat.label}</div>
                       <div style={{ fontSize: '2.2rem', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>{stat.value}</div>
                       <div style={{ fontSize: '0.95rem', fontWeight: 600, color: stat.color }}>{stat.trend} em relação ao mês passado</div>
@@ -1677,7 +1738,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 32 }}>
-                  <div style={{ background: '#fff', borderRadius: 28, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                  <div style={{ background: '#fff', borderRadius: 2, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
                     <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: colors.primary, marginBottom: 32 }}>Receita Diária (Semana)</h3>
                     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '200px', padding: '0 20px' }}>
                       {[40, 70, 45, 90, 65, 80, 50].map((h, i) => (
@@ -1689,7 +1750,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     </div>
                   </div>
 
-                  <div style={{ background: '#fff', borderRadius: 28, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                  <div style={{ background: '#fff', borderRadius: 2, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
                     <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: colors.primary, marginBottom: 32, textAlign: 'center' }}>Distribuição de Planos</h3>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
                       <div style={{ position: 'relative', width: 160, height: 160 }}>
@@ -1727,35 +1788,35 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
             {activeTab === 'settings' && (
               <motion.div key="settings" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
                 
-                <div style={{ background: '#fff', borderRadius: 32, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)' }}>
+                <div style={{ background: '#fff', borderRadius: 2, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)' }}>
                   <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: colors.primary, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Settings size={24} color={colors.accent} /> Perfil da Clínica
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Nome da Unidade</label>
-                      <input defaultValue="Solara Connect - Matriz" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none' }} />
+                      <input defaultValue="Solara Connect - Matriz" style={{ width: '100%', padding: '12px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none' }} />
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>E-mail de Notificações</label>
-                      <input defaultValue="axoshub.solara@gmail.com" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none' }} />
+                      <input defaultValue="axoshub.solara@gmail.com" style={{ width: '100%', padding: '12px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none' }} />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Telefone Comercial</label>
-                        <input defaultValue="(11) 99999-0000" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none' }} />
+                        <input defaultValue="(11) 99999-0000" style={{ width: '100%', padding: '12px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none' }} />
                       </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>CNPJ</label>
-                        <input defaultValue="00.000.000/0001-00" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none' }} />
+                        <input defaultValue="00.000.000/0001-00" style={{ width: '100%', padding: '12px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none' }} />
                       </div>
                     </div>
-                    <button style={{ marginTop: 12, background: colors.primary, color: '#fff', border: 'none', padding: '14px', borderRadius: 12, fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer' }}>Salvar Alterações</button>
+                    <button style={{ marginTop: 12, background: colors.primary, color: '#fff', border: 'none', padding: '14px', borderRadius: 2, fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer' }}>Salvar Alterações</button>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-                  <div style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, #1e1b4b 100%)`, borderRadius: 32, padding: 32, color: '#fff' }}>
+                  <div style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, #1e1b4b 100%)`, borderRadius: 2, padding: 32, color: '#fff' }}>
                     <h3 style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
                       <Zap size={20} color={colors.accent} /> Cérebro IA (Solara)
                     </h3>
@@ -1765,7 +1826,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                           <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>Automação de WhatsApp</div>
                           <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>IA responde agendamentos sozinha</div>
                         </div>
-                        <div style={{ width: 44, height: 24, background: colors.success, borderRadius: 12, position: 'relative', cursor: 'pointer' }}>
+                        <div style={{ width: 44, height: 24, background: colors.success, borderRadius: 2, position: 'relative', cursor: 'pointer' }}>
                           <div style={{ width: 18, height: 18, background: '#fff', borderRadius: '50%', position: 'absolute', right: 3, top: 3 }} />
                         </div>
                       </div>
@@ -1774,20 +1835,20 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                           <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>Análise de Churn</div>
                           <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>Detectar clientes em risco</div>
                         </div>
-                        <div style={{ width: 44, height: 24, background: colors.success, borderRadius: 12, position: 'relative', cursor: 'pointer' }}>
+                        <div style={{ width: 44, height: 24, background: colors.success, borderRadius: 2, position: 'relative', cursor: 'pointer' }}>
                           <div style={{ width: 18, height: 18, background: '#fff', borderRadius: '50%', position: 'absolute', right: 3, top: 3 }} />
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ background: '#fff', borderRadius: 32, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)' }}>
+                  <div style={{ background: '#fff', borderRadius: 2, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)' }}>
                     <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: colors.primary, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                       <MessageSquare size={24} color={colors.success} /> Conexão WhatsApp
                     </h3>
                     <p style={{ fontSize: '0.9rem', color: colors.textMuted, marginBottom: 24 }}>Conecte seu WhatsApp para habilitar as automações e o chat em tempo real.</p>
                     
-                    <div style={{ background: '#f8fafc', padding: 24, borderRadius: 24, border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                    <div style={{ background: '#f8fafc', padding: 24, borderRadius: 2, border: '1px solid #e2e8f0', textAlign: 'center' }}>
                       {whatsappStatus === 'connected' ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
                           <div style={{ width: 64, height: 64, borderRadius: '50%', background: `${colors.success}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1800,7 +1861,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                           <button 
                             onClick={handleDisconnectWhatsApp}
                             disabled={isSyncingWA}
-                            style={{ background: 'transparent', border: `1px solid ${colors.danger}`, color: colors.danger, padding: '10px 20px', borderRadius: 12, fontWeight: 600, cursor: 'pointer' }}
+                            style={{ background: 'transparent', border: `1px solid ${colors.danger}`, color: colors.danger, padding: '10px 20px', borderRadius: 2, fontWeight: 600, cursor: 'pointer' }}
                           >
                             Desconectar Conta
                           </button>
@@ -1809,11 +1870,11 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
                           {qrCode ? (
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-                              <div style={{ background: '#fff', padding: 16, borderRadius: 20, boxShadow: '0 10px 20px rgba(0,0,0,0.05)' }}>
+                              <div style={{ background: '#fff', padding: 16, borderRadius: 2, boxShadow: '0 10px 20px rgba(0,0,0,0.05)' }}>
                                 <img src={qrCode} alt="WhatsApp QR Code" style={{ width: 200, height: 200 }} />
                               </div>
                               <p style={{ fontSize: '0.85rem', color: colors.textMuted, maxWidth: 250 }}>Abra o WhatsApp {'>'} Configurações {'>'} Aparelhos Conectados e escaneie o código.</p>
-                              <button onClick={checkWhatsAppStatus} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 12, fontWeight: 600, cursor: 'pointer' }}>Já escaneei</button>
+                              <button onClick={checkWhatsAppStatus} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 2, fontWeight: 600, cursor: 'pointer' }}>Já escaneei</button>
                             </div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
@@ -1824,7 +1885,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                               <button 
                                 onClick={handleConnectWhatsApp}
                                 disabled={isSyncingWA}
-                                style={{ background: colors.success, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 12, fontWeight: 700, cursor: 'pointer', boxShadow: `0 8px 16px ${colors.success}30` }}
+                                style={{ background: colors.success, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 2, fontWeight: 700, cursor: 'pointer', boxShadow: `0 8px 16px ${colors.success}30` }}
                               >
                                 {isSyncingWA ? 'Gerando QR Code...' : 'Conectar Agora'}
                               </button>
@@ -1835,7 +1896,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     </div>
                   </div>
 
-                  <div style={{ background: '#fff', borderRadius: 32, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)' }}>
+                  <div style={{ background: '#fff', borderRadius: 2, padding: 32, border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 15px 40px rgba(0,0,0,0.03)' }}>
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: colors.primary, marginBottom: 16 }}>Personalização</h3>
                     <div style={{ display: 'flex', gap: 12 }}>
                       {['#130f40', '#7ed6df', '#33d9b2', '#ffda79'].map(c => (
@@ -1857,14 +1918,14 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       <AnimatePresence>
         {showModal && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(19, 15, 64, 0.6)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '500px', borderRadius: 32, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)' }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '500px', borderRadius: 2, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)' }}>
               <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: 24, right: 24, background: '#f1f5f9', border: 'none', borderRadius: '50%', padding: 10, cursor: 'pointer' }}><X size={20} color={colors.primary} /></button>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Novo Agendamento</h2>
               <p style={{ color: colors.textMuted, marginBottom: 32, fontSize: '1.1rem' }}>Preencha os dados do cliente e confirme o consentimento LGPD.</p>
               <form onSubmit={handleSaveAppointment} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Nome Completo</label>
-                  <input type="text" required value={newPatient.name} onChange={e => setNewPatient({...newPatient, name: e.target.value})} placeholder="Ex: João Silva" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.1rem' }} />
+                  <input type="text" required value={newPatient.name} onChange={e => setNewPatient({...newPatient, name: e.target.value})} placeholder="Ex: João Silva" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.1rem' }} />
                 </div>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
@@ -1882,7 +1943,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                         setNewPatient({...newPatient, phone: v});
                       }} 
                       placeholder="(00) 00000-0000" 
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.1rem' }} 
+                      style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.1rem' }} 
                     />
                   </div>
                   <div>
@@ -1898,7 +1959,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                         setNewPatient({...newPatient, cpf: v.substring(0, 14)});
                       }} 
                       placeholder="000.000.000-00" 
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.1rem' }} 
+                      style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.1rem' }} 
                     />
                   </div>
                 </div>
@@ -1906,22 +1967,22 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Idade</label>
-                    <input type="number" value={newPatient.age} onChange={e => setNewPatient({...newPatient, age: e.target.value})} placeholder="Ex: 30" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
+                    <input type="number" value={newPatient.age} onChange={e => setNewPatient({...newPatient, age: e.target.value})} placeholder="Ex: 30" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Data</label>
-                    <input type="date" required value={newAppointment.date} onChange={e => setNewAppointment({...newAppointment, date: e.target.value})} style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
+                    <input type="date" required value={newAppointment.date} onChange={e => setNewAppointment({...newAppointment, date: e.target.value})} style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Horário</label>
-                    <input type="time" required value={newAppointment.time} onChange={e => setNewAppointment({...newAppointment, time: e.target.value})} style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
+                    <input type="time" required value={newAppointment.time} onChange={e => setNewAppointment({...newAppointment, time: e.target.value})} style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Especialista</label>
-                    <select value={newAppointment.doctor_id} onChange={e => setNewAppointment({...newAppointment, doctor_id: e.target.value})} style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', background: '#fff', fontSize: '1.15rem' }}>
+                    <select value={newAppointment.doctor_id} onChange={e => setNewAppointment({...newAppointment, doctor_id: e.target.value})} style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', background: '#fff', fontSize: '1.15rem' }}>
                       <option value="">Selecione...</option>
                       {specialistsList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
@@ -1931,7 +1992,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Plano / Convênio</label>
-                    <select value={newPatient.insurance} onChange={e => setNewPatient({...newPatient, insurance: e.target.value})} style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', background: '#fff', fontSize: '1.15rem' }}>
+                    <select value={newPatient.insurance} onChange={e => setNewPatient({...newPatient, insurance: e.target.value})} style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', background: '#fff', fontSize: '1.15rem' }}>
                       <option value="Particular">Particular</option>
                       <option value="SulAmérica">SulAmérica</option>
                       <option value="Bradesco Saúde">Bradesco Saúde</option>
@@ -1943,14 +2004,14 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   <div /> {/* Espaço vazio para simetria */}
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', background: '#f8fafc', padding: '16px', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', background: '#f8fafc', padding: '16px', borderRadius: 2, border: '1px solid #e2e8f0' }}>
                   <input type="checkbox" required checked={newPatient.lgpd_consent} onChange={e => setNewPatient({...newPatient, lgpd_consent: e.target.checked})} style={{ marginTop: 4, cursor: 'pointer' }} id="lgpd" />
                   <label htmlFor="lgpd" style={{ fontSize: '0.8rem', color: colors.textMuted, cursor: 'pointer', lineHeight: '1.4' }}>
                     <strong>Termo de Consentimento LGPD:</strong> O cliente autoriza a coleta e tratamento de seus dados pessoais para fins de atendimento clínico e comunicações via WhatsApp conforme a Lei 13.709/18.
                   </label>
                 </div>
 
-                <button type="submit" disabled={isLoading} style={{ marginTop: 12, background: colors.primary, opacity: isLoading ? 0.7 : 1, color: '#fff', border: 'none', padding: '16px', borderRadius: 14, fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                <button type="submit" disabled={isLoading} style={{ marginTop: 12, background: colors.primary, opacity: isLoading ? 0.7 : 1, color: '#fff', border: 'none', padding: '16px', borderRadius: 2, fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                   {isLoading ? 'Salvando...' : <><Check size={20} /> Salvar Agendamento</>}
                 </button>
               </form>
@@ -1963,39 +2024,39 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       <AnimatePresence>
         {showSpecialistModal && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(19, 15, 64, 0.6)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '500px', borderRadius: 32, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)' }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '500px', borderRadius: 2, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)' }}>
               <button onClick={() => setShowSpecialistModal(false)} style={{ position: 'absolute', top: 24, right: 24, background: '#f1f5f9', border: 'none', borderRadius: '50%', padding: 10, cursor: 'pointer' }}><X size={20} color={colors.primary} /></button>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Novo Especialista</h2>
               <p style={{ color: colors.textMuted, marginBottom: 32, fontSize: '1.1rem' }}>Adicione um novo médico à sua clínica.</p>
               <form onSubmit={handleSaveSpecialist} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Nome Completo</label>
-                  <input type="text" required value={newSpecialist.name} onChange={e => setNewSpecialist({...newSpecialist, name: e.target.value})} placeholder="Ex: Dr. Paulo Silva" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
+                  <input type="text" required value={newSpecialist.name} onChange={e => setNewSpecialist({...newSpecialist, name: e.target.value})} placeholder="Ex: Dr. Paulo Silva" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
                 </div>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>Especialidade</label>
-                    <input type="text" required value={newSpecialist.specialty} onChange={e => setNewSpecialist({...newSpecialist, specialty: e.target.value})} placeholder="Ex: Ortodontia" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
+                    <input type="text" required value={newSpecialist.specialty} onChange={e => setNewSpecialist({...newSpecialist, specialty: e.target.value})} placeholder="Ex: Ortodontia" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>CRM (Opcional)</label>
-                    <input type="text" value={newSpecialist.crm} onChange={e => setNewSpecialist({...newSpecialist, crm: e.target.value})} placeholder="Ex: 12345-SP" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
+                    <input type="text" value={newSpecialist.crm} onChange={e => setNewSpecialist({...newSpecialist, crm: e.target.value})} placeholder="Ex: 12345-SP" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>E-mail (Opcional)</label>
-                    <input type="email" value={newSpecialist.email} onChange={e => setNewSpecialist({...newSpecialist, email: e.target.value})} placeholder="Ex: doutor@clinica.com" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
+                    <input type="email" value={newSpecialist.email} onChange={e => setNewSpecialist({...newSpecialist, email: e.target.value})} placeholder="Ex: doutor@clinica.com" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>WhatsApp / Emergência</label>
-                    <input type="text" value={newSpecialist.phone} onChange={e => setNewSpecialist({...newSpecialist, phone: e.target.value})} placeholder="(00) 00000-0000" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
+                    <input type="text" value={newSpecialist.phone} onChange={e => setNewSpecialist({...newSpecialist, phone: e.target.value})} placeholder="(00) 00000-0000" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '1.15rem' }} />
                   </div>
                 </div>
 
-                <button type="submit" disabled={isLoading} style={{ marginTop: 12, background: colors.success, opacity: isLoading ? 0.7 : 1, color: '#fff', border: 'none', padding: '16px', borderRadius: 14, fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                <button type="submit" disabled={isLoading} style={{ marginTop: 12, background: colors.success, opacity: isLoading ? 0.7 : 1, color: '#fff', border: 'none', padding: '16px', borderRadius: 2, fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                   {isLoading ? 'Salvando...' : <><Plus size={20} /> Salvar Especialista</>}
                 </button>
               </form>
@@ -2008,7 +2069,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       <AnimatePresence>
         {showPrescriptionModal && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(19, 15, 64, 0.6)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '600px', borderRadius: 32, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)' }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '600px', borderRadius: 2, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)' }}>
               <button onClick={() => setShowPrescriptionModal(false)} style={{ position: 'absolute', top: 24, right: 24, background: '#f1f5f9', border: 'none', borderRadius: '50%', padding: 10, cursor: 'pointer' }}><X size={20} color={colors.primary} /></button>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: colors.primary, marginBottom: 8 }}>Nova Prescrição</h2>
               <p style={{ color: colors.textMuted, marginBottom: 32 }}>Emita receitas médicas de forma rápida e segura.</p>
@@ -2016,22 +2077,22 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: colors.primary, marginBottom: 8 }}>Medicamento</label>
-                  <input type="text" placeholder="Busque por princípio ativo ou nome comercial" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none' }} />
+                  <input type="text" placeholder="Busque por princípio ativo ou nome comercial" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none' }} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: colors.primary, marginBottom: 8 }}>Posologia</label>
-                    <input type="text" placeholder="Ex: 1 comprimido a cada 8h" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none' }} />
+                    <input type="text" placeholder="Ex: 1 comprimido a cada 8h" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: colors.primary, marginBottom: 8 }}>Duração</label>
-                    <input type="text" placeholder="Ex: 7 dias" style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none' }} />
+                    <input type="text" placeholder="Ex: 7 dias" style={{ width: '100%', padding: '14px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none' }} />
                   </div>
                 </div>
                 <button onClick={() => {
                   alert('Receita salva com sucesso!');
                   setShowPrescriptionModal(false);
-                }} style={{ marginTop: 12, background: colors.success, color: '#fff', border: 'none', padding: '16px', borderRadius: 14, fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                }} style={{ marginTop: 12, background: colors.success, color: '#fff', border: 'none', padding: '16px', borderRadius: 2, fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                   <Plus size={20} /> Adicionar Medicamento e Salvar
                 </button>
               </div>
@@ -2044,7 +2105,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       <AnimatePresence>
         {showRecordModal && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(19, 15, 64, 0.6)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '500px', borderRadius: 32, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)' }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '500px', borderRadius: 2, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)' }}>
               <button onClick={() => setShowRecordModal(false)} style={{ position: 'absolute', top: 24, right: 24, background: '#f1f5f9', border: 'none', borderRadius: '50%', padding: 10, cursor: 'pointer' }}><X size={20} color={colors.primary} /></button>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: colors.primary, marginBottom: 8 }}>Selecionar Cliente</h2>
               <p style={{ color: colors.textMuted, marginBottom: 24 }}>Escolha o cliente para iniciar a evolução clínica.</p>
@@ -2055,7 +2116,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   placeholder="Buscar por nome ou CPF..." 
                   value={patientSearch}
                   onChange={(e) => setPatientSearch(e.target.value)}
-                  style={{ width: '100%', padding: '14px 16px 14px 48px', borderRadius: 14, border: '1px solid #e2e8f0', outline: 'none', background: '#f8fafc' }} 
+                  style={{ width: '100%', padding: '14px 16px 14px 48px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', background: '#f8fafc' }} 
                 />
               </div>
 
@@ -2070,7 +2131,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                       setShowRecordModal(false);
                       setPatientSearch("");
                     }}
-                    style={{ padding: '16px', borderRadius: 16, border: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.2s' }}
+                    style={{ padding: '16px', borderRadius: 2, border: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
@@ -2096,7 +2157,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       <AnimatePresence>
         {showSignatureModal && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(19, 15, 64, 0.6)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '400px', borderRadius: 32, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)', textAlign: 'center' }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: '#fff', width: '100%', maxWidth: '400px', borderRadius: 2, padding: '40px', position: 'relative', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)', textAlign: 'center' }}>
               <button onClick={() => setShowSignatureModal(false)} style={{ position: 'absolute', top: 24, right: 24, background: '#f1f5f9', border: 'none', borderRadius: '50%', padding: 10, cursor: 'pointer' }}><X size={20} color={colors.primary} /></button>
               
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: `${colors.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
@@ -2111,7 +2172,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
               <button 
                 onClick={handleSaveMedicalRecord} 
                 disabled={isLoading}
-                style={{ width: '100%', background: colors.primary, opacity: isLoading ? 0.7 : 1, color: '#fff', border: 'none', padding: '16px', borderRadius: 14, fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
+                style={{ width: '100%', background: colors.primary, opacity: isLoading ? 0.7 : 1, color: '#fff', border: 'none', padding: '16px', borderRadius: 2, fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
               >
                 {isLoading ? 'Salvando...' : 'Confirmar Assinatura'}
               </button>
@@ -2148,10 +2209,10 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
         </AnimatePresence>
         <AnimatePresence>
           {showSolara && (
-            <motion.div initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.9 }} style={{ width: 420, height: 610, background: '#fff', borderRadius: 28, boxShadow: '0 25px 60px -12px rgba(19, 15, 64, 0.4)', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <motion.div initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.9 }} style={{ width: 420, height: 610, background: '#fff', borderRadius: 2, boxShadow: '0 25px 60px -12px rgba(19, 15, 64, 0.4)', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ background: colors.primary, padding: '24px', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 40, height: 40, background: colors.accent, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: 40, height: 40, background: colors.accent, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Zap size={24} color={colors.primary} />
                   </div>
                   <div>
@@ -2160,8 +2221,8 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setSolaraMessages([{ role: 'assistant', content: SOLARA_WELCOME_MESSAGE }])} title="Limpar Conversa" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', color: '#fff' }}><Trash2 size={16} /></button>
-                  <button onClick={() => setShowSolara(false)} title="Fechar" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', color: '#fff' }}><X size={16} /></button>
+                  <button onClick={() => setSolaraMessages([{ role: 'assistant', content: SOLARA_WELCOME_MESSAGE }])} title="Limpar Conversa" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 2, padding: 8, cursor: 'pointer', color: '#fff' }}><Trash2 size={16} /></button>
+                  <button onClick={() => setShowSolara(false)} title="Fechar" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 2, padding: 8, cursor: 'pointer', color: '#fff' }}><X size={16} /></button>
                 </div>
               </div>
               
@@ -2188,13 +2249,13 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   onKeyDown={e => e.key === 'Enter' && (handleVoiceSend() as any)}
                   placeholder={(voiceError && voiceTarget === 'solara') ? `❌ ${voiceError}` : (isListening && voiceTarget === 'solara') ? "Ouvindo... Fale agora" : isSolaraSending ? "Solara está respondendo..." : "Digite sua dúvida ou diga 'Solara'"} 
                   disabled={isSolaraSending}
-                  style={{ flex: 1, padding: '12px 16px', borderRadius: 12, border: (voiceError && voiceTarget === 'solara') ? '2px solid #ef4444' : (isListening && voiceTarget === 'solara') ? `2px solid ${colors.accent}` : '1px solid #e2e8f0', outline: 'none', fontSize: '15px', transition: 'all 0.3s' }} 
+                  style={{ flex: 1, padding: '12px 16px', borderRadius: 2, border: (voiceError && voiceTarget === 'solara') ? '2px solid #ef4444' : (isListening && voiceTarget === 'solara') ? `2px solid ${colors.accent}` : '1px solid #e2e8f0', outline: 'none', fontSize: '15px', transition: 'all 0.3s' }} 
                 />
                 <button 
                   onClick={toggleVoice} 
                   title="Comando de Voz"
                   disabled={isSolaraSending}
-                  style={{ background: isListening ? colors.accent : colors.bg, color: isListening ? colors.primary : colors.textMuted, border: 'none', borderRadius: 12, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative' }}
+                  style={{ background: isListening ? colors.accent : colors.bg, color: isListening ? colors.primary : colors.textMuted, border: 'none', borderRadius: 2, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative' }}
                 >
                   <Mic size={20} style={{ animation: isListening ? 'pulse 1.5s infinite' : 'none' }} />
                   {isListening && voiceTarget === 'solara' && (
@@ -2205,7 +2266,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     </div>
                   )}
                 </button>
-                <button onClick={() => handleVoiceSend()} disabled={isSolaraSending} style={{ background: colors.primary, opacity: isSolaraSending ? 0.7 : 1, color: '#fff', border: 'none', borderRadius: 12, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button onClick={() => handleVoiceSend()} disabled={isSolaraSending} style={{ background: colors.primary, opacity: isSolaraSending ? 0.7 : 1, color: '#fff', border: 'none', borderRadius: 2, padding: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Send size={20} />
                 </button>
               </div>

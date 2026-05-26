@@ -1,5 +1,4 @@
-import React from 'react';
-import { Globe, MessageCircle, Mail, ExternalLink, ShieldCheck, Star, Crown } from 'lucide-react';
+import { Globe, MessageCircle, Mail, ExternalLink, ShieldCheck, Crown } from 'lucide-react';
 
 interface Partner {
   id: string;
@@ -176,7 +175,7 @@ export default function PartnersPage() {
           <div style={{ marginBottom: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
               <span style={{ fontSize: '1.8rem' }}>{category.icon}</span>
-              <h3 style={{ fontSize: '1.6rem', fontWeight: 700, color: '#130f40', margin: 0 }}>
+              <h3 style={{ fontSize: '1.6rem', fontWeight: 600, color: '#130f40', margin: 0 }}>
                 {category.title}
               </h3>
             </div>
@@ -195,20 +194,21 @@ export default function PartnersPage() {
                 key={partner.id}
                 style={{
                   background: partner.isEmptySlot ? 'rgba(255,255,255,0.5)' : '#fff',
-                  border: partner.isEmptySlot ? '2px dashed rgba(126,214,223,0.4)' : '1px solid rgba(0,0,0,0.04)',
-                  borderRadius: 24,
-                  padding: 32,
+                  border: partner.isEmptySlot ? '2px dashed rgba(126,214,223,0.4)' : '0.5px solid #222f3e',
+                  borderRadius: 2,
+                  padding: '16px 20px',
                   display: 'flex',
                   flexDirection: 'column',
                   transition: 'all 0.3s ease',
                   position: 'relative',
                   boxShadow: partner.isEmptySlot ? 'none' : '0 10px 30px rgba(0,0,0,0.03)',
-                  height: '100%' // garante que os 3 cards fiquem da mesma altura na linha
+                  height: '100%',
+                  minHeight: 75
                 }}
                 onMouseEnter={(e) => {
                   if (!partner.isEmptySlot) {
-                    e.currentTarget.style.transform = 'translateY(-6px)';
-                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(126,214,223,0.2)';
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 15px 30px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(126,214,223,0.2)';
                   } else {
                     e.currentTarget.style.background = 'rgba(126,214,223,0.02)';
                     e.currentTarget.style.borderColor = 'rgba(126,214,223,0.6)';
@@ -225,69 +225,52 @@ export default function PartnersPage() {
                 }}
               >
                 {!partner.isEmptySlot && (
-                  <div style={{ position: 'absolute', top: 24, right: 24, background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)', color: '#fff', padding: '4px 12px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 4px 10px rgba(19,15,64,0.3)' }}>
-                    <ShieldCheck size={14} color="#7ed6df" /> HOMOLOGADO
+                  <div style={{ position: 'absolute', top: 16, right: 16, background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)', color: '#fff', padding: '4px 10px', borderRadius: 2, fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 4px 10px rgba(19,15,64,0.3)' }}>
+                    <ShieldCheck size={12} color="#7ed6df" /> HOMOLOGADO
                   </div>
                 )}
 
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ 
-                    width: 56, 
-                    height: 56, 
-                    borderRadius: 16, 
-                    background: partner.isEmptySlot ? 'rgba(126,214,223,0.1)' : 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)',
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    marginBottom: 20,
-                    color: partner.isEmptySlot ? '#130f40' : '#7ed6df',
-                    fontSize: '1.5rem',
-                    fontWeight: 800,
-                    boxShadow: partner.isEmptySlot ? 'none' : '0 8px 16px rgba(19,15,64,0.15)'
-                  }}>
-                    {partner.isEmptySlot ? <Crown size={24} /> : partner.name.charAt(0)}
-                  </div>
-                  
+                <div style={{ marginBottom: 12 }}>
                   <h3 style={{ 
-                    fontSize: '1.4rem', 
-                    fontWeight: 800, 
+                    fontSize: '1.2rem', 
+                    fontWeight: 500, 
                     color: partner.isEmptySlot ? 'rgba(19,15,64,0.4)' : '#130f40', 
-                    marginBottom: 8,
-                    letterSpacing: '-0.5px'
+                    margin: 0,
+                    letterSpacing: '-0.5px',
+                    paddingRight: partner.isEmptySlot ? 0 : 100
                   }}>
                     {partner.name}
                   </h3>
-                  <p style={{ 
-                    fontSize: '0.9rem', 
-                    color: '#64748b', 
-                    lineHeight: 1.6,
-                    minHeight: 44,
-                    fontWeight: 500
-                  }}>
-                    {partner.specialty}
-                  </p>
                 </div>
 
-                {!partner.isEmptySlot && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#7ed6df', fontSize: '0.85rem', fontWeight: 600, marginBottom: 28, cursor: 'pointer', transition: 'color 0.2s' }} 
-                       onMouseEnter={e => e.currentTarget.style.color = '#130f40'}
-                       onMouseLeave={e => e.currentTarget.style.color = '#7ed6df'}
-                       onClick={() => window.open(`https://${partner.site}`, '_blank')}>
-                    <Globe size={16} /> {partner.site} <ExternalLink size={14} style={{ marginLeft: 4 }} />
+                {!partner.isEmptySlot ? (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px 0 16px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#222f3e', fontSize: '17px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.2s' }} 
+                         onMouseEnter={e => e.currentTarget.style.color = '#f97316'}
+                         onMouseLeave={e => e.currentTarget.style.color = '#222f3e'}
+                         onClick={() => window.open(`https://${partner.site}`, '_blank')}>
+                      <Globe size={17} /> {partner.site} <ExternalLink size={15} style={{ marginLeft: 2 }} />
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px 0 16px 0' }}>
+                    <p style={{ fontSize: '0.9rem', color: '#64748b', textAlign: 'center', margin: 0, fontWeight: 500 }}>
+                      {partner.specialty}
+                    </p>
                   </div>
                 )}
 
-                <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
+                <div style={{ marginTop: 'auto', display: 'flex', width: '100%' }}>
                   {partner.isEmptySlot ? (
                     <button style={{ 
-                      flex: 1, 
-                      padding: '14px', 
-                      borderRadius: 14, 
+                      width: '100%', 
+                      padding: '10px', 
+                      borderRadius: 2, 
                       border: '1px solid rgba(126,214,223,0.5)', 
                       background: 'rgba(126,214,223,0.05)',
                       color: '#130f40', 
                       fontWeight: 700,
-                      fontSize: '0.95rem',
+                      fontSize: '0.9rem',
                       cursor: 'pointer',
                       transition: 'all 0.3s'
                     }}
@@ -301,55 +284,35 @@ export default function PartnersPage() {
                       Quero Anunciar Aqui
                     </button>
                   ) : (
-                    <>
-                      <button style={{ 
-                        flex: 1, 
-                        padding: '12px', 
-                        borderRadius: 14, 
-                        border: 'none', 
-                        background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)', 
-                        color: '#fff', 
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 15px rgba(37, 211, 102, 0.2)',
-                        transition: 'transform 0.2s, box-shadow 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 8px 20px rgba(37, 211, 102, 0.3)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(37, 211, 102, 0.2)';
-                      }}
-                      >
-                        <MessageCircle size={18} /> WhatsApp
-                      </button>
-                      <button style={{ 
-                        flex: 1, 
-                        padding: '12px', 
-                        borderRadius: 14, 
-                        border: '1px solid rgba(0,0,0,0.1)', 
-                        background: '#fff', 
-                        color: '#130f40', 
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        cursor: 'pointer',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
-                      >
-                        <Mail size={18} /> E-mail
-                      </button>
-                    </>
+                    <button style={{ 
+                      width: '100%', 
+                      padding: '10px', 
+                      borderRadius: 2, 
+                      border: 'none', 
+                      background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)', 
+                      color: '#fff', 
+                      fontWeight: 600,
+                      fontSize: '0.95rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 15px rgba(37, 211, 102, 0.2)',
+                      transition: 'transform 0.2s, box-shadow 0.2s'
+                    }}
+                    onClick={() => window.open(`https://${partner.site}`, '_blank')}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(37, 211, 102, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(37, 211, 102, 0.2)';
+                    }}
+                    >
+                      <Globe size={18} /> Acesse o site
+                    </button>
                   )}
                 </div>
               </div>

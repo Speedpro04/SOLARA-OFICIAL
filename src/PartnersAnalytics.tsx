@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Download, Search, Filter, TrendingUp, Users, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { Download, Search } from 'lucide-react';
 
 const mockAnalytics = [
   { id: '1', name: 'Gnatus', category: 'Equipamentos Odontológicos', whatsapp: 145, email: 32, total: 177, status: 'Ativo' },
@@ -49,7 +49,7 @@ export default function PartnersAnalytics() {
         }
       `}</style>
 
-      <div id="printable-report" style={{ background: '#fff', borderRadius: 28, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+      <div id="printable-report" style={{ background: '#fff', borderRadius: 2, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <div>
             <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#130f40', marginBottom: 4 }}>Performance de Parceiros</h3>
@@ -67,7 +67,7 @@ export default function PartnersAnalytics() {
               color: '#fff', 
               border: 'none', 
               padding: '12px 24px', 
-              borderRadius: 12, 
+              borderRadius: 2, 
               fontWeight: 600, 
               cursor: 'pointer',
               boxShadow: '0 4px 15px rgba(19,15,64,0.2)'
@@ -85,7 +85,7 @@ export default function PartnersAnalytics() {
               placeholder="Buscar por fornecedor ou categoria..." 
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: 12, border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem' }}
+              style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem' }}
             />
           </div>
         </div>

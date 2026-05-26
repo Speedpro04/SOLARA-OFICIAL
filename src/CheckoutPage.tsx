@@ -117,7 +117,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ planName, planPrice, priceI
               </div>
               
               {/* Resumo do plano */}
-              <div style={{ width: '100%', background: colors.inputBg, border: `1px solid ${colors.cyanDark}`, borderRadius: 16, padding: '20px', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ width: '100%', background: colors.inputBg, border: `1px solid ${colors.cyanDark}`, borderRadius: 2, padding: '20px', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: '0.8rem', color: colors.textMuted, marginBottom: 4 }}>Plano Selecionado</div>
                   <div style={{ fontSize: '1.1rem', color: '#fff', fontWeight: 700 }}>{planName}</div>
@@ -129,17 +129,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ planName, planPrice, priceI
               </div>
 
               {error && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', background: `${colors.danger}20`, border: `1px solid ${colors.danger}50`, borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: colors.danger }}>
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', background: `${colors.danger}20`, border: `1px solid ${colors.danger}50`, borderRadius: 2, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: colors.danger }}>
                   <AlertCircle size={18} /> {error}
                 </motion.div>
               )}
 
               <form style={{ width: '100%' }} onSubmit={handlePayment}>
-                <div style={{ marginBottom: 24, background: colors.inputBg, border: `1px solid ${colors.cyanDark}`, borderRadius: 12, padding: '14px 16px', color: '#c9c9c9', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                <div style={{ marginBottom: 24, background: colors.inputBg, border: `1px solid ${colors.cyanDark}`, borderRadius: 2, padding: '14px 16px', color: '#c9c9c9', fontSize: '0.9rem', lineHeight: 1.5 }}>
                   Você será redirecionado para o ambiente seguro do Stripe para inserir os dados de pagamento.
                 </div>
 
-                <motion.button disabled={isProcessing} whileHover={!isProcessing ? { scale: 1.02, boxShadow: `0 10px 25px ${colors.cyan}50` } : {}} whileTap={!isProcessing ? { scale: 0.98 } : {}} type="submit" style={{ width: '100%', background: isProcessing ? colors.inputBg : `linear-gradient(to right, ${colors.cyan}, #00a8ff)`, border: isProcessing ? `1px solid ${colors.cyan}` : 'none', padding: '16px', borderRadius: 12, color: isProcessing ? colors.cyan : '#ffffff', fontWeight: 700, fontSize: '1.05rem', cursor: isProcessing ? 'wait' : 'pointer', marginBottom: 24, boxShadow: isProcessing ? 'none' : `0 8px 20px ${colors.cyan}40`, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
+                <motion.button disabled={isProcessing} whileHover={!isProcessing ? { scale: 1.02, boxShadow: `0 10px 25px ${colors.cyan}50` } : {}} whileTap={!isProcessing ? { scale: 0.98 } : {}} type="submit" style={{ width: '100%', background: isProcessing ? colors.inputBg : `linear-gradient(to right, ${colors.cyan}, #00a8ff)`, border: isProcessing ? `1px solid ${colors.cyan}` : 'none', padding: '16px', borderRadius: 2, color: isProcessing ? colors.cyan : '#ffffff', fontWeight: 700, fontSize: '1.05rem', cursor: isProcessing ? 'wait' : 'pointer', marginBottom: 24, boxShadow: isProcessing ? 'none' : `0 8px 20px ${colors.cyan}40`, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
                   {isProcessing ? (
                     <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
                       <LockKeyhole size={20} />
@@ -166,7 +166,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ planName, planPrice, priceI
         
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.8, ease: "easeOut" }} style={{ zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {isSuccess ? (
-            <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 0.8 }} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${colors.success}40`, borderRadius: 24, padding: 32, width: '100%', maxWidth: 500, backdropFilter: 'blur(20px)' }}>
+            <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 0.8 }} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${colors.success}40`, borderRadius: 2, padding: 32, width: '100%', maxWidth: 500, backdropFilter: 'blur(20px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 20, marginBottom: 20 }}>
                 <div style={{ background: colors.success, padding: 12, borderRadius: '50%' }}>
                   <MailCheck size={24} color={colors.bgRight} />
@@ -179,7 +179,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ planName, planPrice, priceI
               <div style={{ color: '#ccc', lineHeight: 1.6, fontSize: '1rem' }}>
                 <p>Olá! O pagamento da sua clínica foi processado com sucesso.</p>
                 <p>Sua infraestrutura <strong>Solara Connect</strong> já foi provisionada.</p>
-                <div style={{ background: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 12, marginTop: 16, border: '1px dashed rgba(255,255,255,0.2)' }}>
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 2, marginTop: 16, border: '1px dashed rgba(255,255,255,0.2)' }}>
                   <strong>Plano:</strong> {planName}<br/>
                   <strong>Valor:</strong> R$ {planPrice}/mês<br/>
                   <strong>Usuário:</strong> {userEmail}<br/>
@@ -189,7 +189,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ planName, planPrice, priceI
             </motion.div>
           ) : (
             <>
-              <div style={{ width: 180, height: 180, background: 'rgba(126, 214, 223, 0.08)', borderRadius: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 40, boxShadow: `0 0 60px ${colors.cyan}20, inset 0 0 30px ${colors.cyan}10`, border: `1px solid ${colors.cyan}30`, backdropFilter: 'blur(10px)' }}>
+              <div style={{ width: 180, height: 180, background: 'rgba(126, 214, 223, 0.08)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 40, boxShadow: `0 0 60px ${colors.cyan}20, inset 0 0 30px ${colors.cyan}10`, border: `1px solid ${colors.cyan}30`, backdropFilter: 'blur(10px)' }}>
                 <CreditCard size={90} color={colors.cyan} strokeWidth={1.5} style={{ filter: `drop-shadow(0 0 15px ${colors.cyan})` }} />
               </div>
               <h2 style={{ fontSize: '3rem', color: colors.cyan, marginBottom: 20, fontWeight: 800, letterSpacing: '-0.02em', textShadow: `0 0 30px ${colors.cyan}40` }}>Transação Segura</h2>

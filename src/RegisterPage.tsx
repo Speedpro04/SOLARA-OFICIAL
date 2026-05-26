@@ -77,7 +77,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onBack, 
           </p>
 
           {error && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', background: `${colors.danger}20`, border: `1px solid ${colors.danger}50`, borderRadius: 12, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: colors.danger }}>
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', background: `${colors.danger}20`, border: `1px solid ${colors.danger}50`, borderRadius: 2, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: colors.danger }}>
               <AlertCircle size={18} /> {error}
             </motion.div>
           )}
@@ -88,7 +88,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onBack, 
               <label style={{ display: 'block', fontSize: '0.85rem', color: colors.cyan, marginBottom: 8, fontWeight: 600 }}>Nome da Clínica</label>
               <div style={{ position: 'relative' }}>
                 <Building2 size={18} color={focusState.name ? colors.cyan : colors.textMuted} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', transition: 'color 0.3s' }} />
-                <input type="text" placeholder="Sua Clínica" value={formData.clinicName} onChange={(e) => setFormData(p => ({ ...p, clinicName: e.target.value }))} onFocus={() => setFocus('name', true)} onBlur={() => setFocus('name', false)} style={{ width: '100%', backgroundColor: colors.inputBg, border: `1px solid ${focusState.name ? colors.cyan : colors.cyanDark}`, borderRadius: 12, padding: '14px 14px 14px 44px', color: '#ffffff', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', boxShadow: focusState.name ? `0 0 0 3px ${colors.cyan}20` : 'none' }} />
+                <input type="text" placeholder="Sua Clínica" value={formData.clinicName} onChange={(e) => setFormData(p => ({ ...p, clinicName: e.target.value }))} onFocus={() => setFocus('name', true)} onBlur={() => setFocus('name', false)} style={{ width: '100%', backgroundColor: colors.inputBg, border: `1px solid ${focusState.name ? colors.cyan : colors.cyanDark}`, borderRadius: 2, padding: '14px 14px 14px 44px', color: '#ffffff', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', boxShadow: focusState.name ? `0 0 0 3px ${colors.cyan}20` : 'none' }} />
               </div>
             </div>
 
@@ -97,7 +97,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onBack, 
               <label style={{ display: 'block', fontSize: '0.85rem', color: colors.cyan, marginBottom: 8, fontWeight: 600 }}>WhatsApp / Telefone</label>
               <div style={{ position: 'relative' }}>
                 <Phone size={18} color={focusState.phone ? colors.cyan : colors.textMuted} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', transition: 'color 0.3s' }} />
-                <input type="text" placeholder="(00) 00000-0000" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} onFocus={() => setFocus('phone', true)} onBlur={() => setFocus('phone', false)} style={{ width: '100%', backgroundColor: colors.inputBg, border: `1px solid ${focusState.phone ? colors.cyan : colors.cyanDark}`, borderRadius: 12, padding: '14px 14px 14px 44px', color: '#ffffff', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', boxShadow: focusState.phone ? `0 0 0 3px ${colors.cyan}20` : 'none' }} />
+                <input type="text" placeholder="(00) 00000-0000" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} onFocus={() => setFocus('phone', true)} onBlur={() => setFocus('phone', false)} style={{ width: '100%', backgroundColor: colors.inputBg, border: `1px solid ${focusState.phone ? colors.cyan : colors.cyanDark}`, borderRadius: 2, padding: '14px 14px 14px 44px', color: '#ffffff', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', boxShadow: focusState.phone ? `0 0 0 3px ${colors.cyan}20` : 'none' }} />
               </div>
             </div>
 
@@ -106,7 +106,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onBack, 
               <label style={{ display: 'block', fontSize: '0.85rem', color: colors.cyan, marginBottom: 8, fontWeight: 600 }}>E-mail</label>
               <div style={{ position: 'relative' }}>
                 <Mail size={18} color={focusState.email ? colors.cyan : colors.textMuted} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', transition: 'color 0.3s' }} />
-                <input type="email" placeholder="contato@clinica.com" value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} onFocus={() => setFocus('email', true)} onBlur={() => setFocus('email', false)} style={{ width: '100%', backgroundColor: colors.inputBg, border: `1px solid ${focusState.email ? colors.cyan : colors.cyanDark}`, borderRadius: 12, padding: '14px 14px 14px 44px', color: '#ffffff', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', boxShadow: focusState.email ? `0 0 0 3px ${colors.cyan}20` : 'none' }} />
+                <input type="email" placeholder="contato@clinica.com" value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} onFocus={() => setFocus('email', true)} onBlur={() => setFocus('email', false)} style={{ width: '100%', backgroundColor: colors.inputBg, border: `1px solid ${focusState.email ? colors.cyan : colors.cyanDark}`, borderRadius: 2, padding: '14px 14px 14px 44px', color: '#ffffff', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', boxShadow: focusState.email ? `0 0 0 3px ${colors.cyan}20` : 'none' }} />
               </div>
             </div>
 
@@ -115,14 +115,14 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onBack, 
               <label style={{ display: 'block', fontSize: '0.85rem', color: colors.cyan, marginBottom: 8, fontWeight: 600 }}>Senha</label>
               <div style={{ position: 'relative' }}>
                 <Lock size={18} color={focusState.pass ? colors.cyan : colors.textMuted} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', transition: 'color 0.3s' }} />
-                <input type={showPassword ? 'text' : 'password'} placeholder="Mínimo 6 caracteres" value={formData.password} onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))} onFocus={() => setFocus('pass', true)} onBlur={() => setFocus('pass', false)} style={{ width: '100%', backgroundColor: colors.inputBg, border: `1px solid ${focusState.pass ? colors.cyan : colors.cyanDark}`, borderRadius: 12, padding: '14px 44px', color: '#ffffff', fontSize: '1rem', outline: 'none', letterSpacing: showPassword ? 'normal' : '3px', transition: 'all 0.3s', boxShadow: focusState.pass ? `0 0 0 3px ${colors.cyan}20` : 'none' }} />
+                <input type={showPassword ? 'text' : 'password'} placeholder="Mínimo 6 caracteres" value={formData.password} onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))} onFocus={() => setFocus('pass', true)} onBlur={() => setFocus('pass', false)} style={{ width: '100%', backgroundColor: colors.inputBg, border: `1px solid ${focusState.pass ? colors.cyan : colors.cyanDark}`, borderRadius: 2, padding: '14px 44px', color: '#ffffff', fontSize: '1rem', outline: 'none', letterSpacing: showPassword ? 'normal' : '3px', transition: 'all 0.3s', boxShadow: focusState.pass ? `0 0 0 3px ${colors.cyan}20` : 'none' }} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>
                   {showPassword ? <EyeOff size={18} color={colors.textMuted} /> : <Eye size={18} color={colors.textMuted} />}
                 </button>
               </div>
             </div>
 
-            <motion.button disabled={isLoading} whileHover={!isLoading ? { scale: 1.02, boxShadow: `0 10px 25px ${colors.cyan}50` } : {}} whileTap={!isLoading ? { scale: 0.98 } : {}} type="submit" style={{ width: '100%', background: isLoading ? colors.inputBg : `linear-gradient(to right, ${colors.cyan}, #00a8ff)`, border: isLoading ? `1px solid ${colors.cyan}` : 'none', padding: '16px', borderRadius: 12, color: isLoading ? colors.cyan : '#ffffff', fontWeight: 700, fontSize: '1.05rem', cursor: isLoading ? 'wait' : 'pointer', marginBottom: 32, boxShadow: isLoading ? 'none' : `0 8px 20px ${colors.cyan}40`, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+            <motion.button disabled={isLoading} whileHover={!isLoading ? { scale: 1.02, boxShadow: `0 10px 25px ${colors.cyan}50` } : {}} whileTap={!isLoading ? { scale: 0.98 } : {}} type="submit" style={{ width: '100%', background: isLoading ? colors.inputBg : `linear-gradient(to right, ${colors.cyan}, #00a8ff)`, border: isLoading ? `1px solid ${colors.cyan}` : 'none', padding: '16px', borderRadius: 2, color: isLoading ? colors.cyan : '#ffffff', fontWeight: 700, fontSize: '1.05rem', cursor: isLoading ? 'wait' : 'pointer', marginBottom: 32, boxShadow: isLoading ? 'none' : `0 8px 20px ${colors.cyan}40`, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10 }}>
               {isLoading ? (
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
                   <Building2 size={20} />
@@ -143,7 +143,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess, onBack, 
       <div style={{ width: '65%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', width: '800px', height: '800px', background: `radial-gradient(circle, ${colors.cyan}15 0%, rgba(0,0,0,0) 60%)`, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 0 }}></div>
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.8, ease: "easeOut" }} style={{ zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ width: 180, height: 180, background: 'rgba(126, 214, 223, 0.08)', borderRadius: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 40, boxShadow: `0 0 60px ${colors.cyan}20, inset 0 0 30px ${colors.cyan}10`, border: `1px solid ${colors.cyan}30`, backdropFilter: 'blur(10px)' }}>
+          <div style={{ width: 180, height: 180, background: 'rgba(126, 214, 223, 0.08)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 40, boxShadow: `0 0 60px ${colors.cyan}20, inset 0 0 30px ${colors.cyan}10`, border: `1px solid ${colors.cyan}30`, backdropFilter: 'blur(10px)' }}>
             <UserPlus size={90} color={colors.cyan} strokeWidth={1.5} style={{ filter: `drop-shadow(0 0 15px ${colors.cyan})` }} />
           </div>
           <h2 style={{ fontSize: '3rem', color: colors.cyan, marginBottom: 20, fontWeight: 800, letterSpacing: '-0.02em', textShadow: `0 0 30px ${colors.cyan}40` }}>Junte-se à Revolução</h2>

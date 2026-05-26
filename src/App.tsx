@@ -174,7 +174,7 @@ function App() {
         />
       )}
       {billingError && view === 'landing' && (
-        <div style={{ position: 'fixed', bottom: 20, left: 20, right: 20, background: '#fff3cd', color: '#856404', border: '1px solid #ffeeba', padding: '12px 16px', borderRadius: 8, zIndex: 1000 }}>
+        <div style={{ position: 'fixed', bottom: 20, left: 20, right: 20, background: '#fff3cd', color: '#856404', border: '1px solid #ffeeba', padding: '12px 16px', borderRadius: 2, zIndex: 1000 }}>
           {billingError}
         </div>
       )}
