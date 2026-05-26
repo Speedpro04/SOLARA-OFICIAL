@@ -1773,14 +1773,14 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   </div>
                 </div>
                 
-                <PartnersAnalytics />
+                <PartnersAnalytics clinicId={clinicId} />
               </motion.div>
             )}
 
             {/* VIEW: PARCEIROS SOLARA */}
             {activeTab === 'partners' && (
               <motion.div key="partners" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                <PartnersPage />
+                <PartnersPage clinicId={clinicId} />
               </motion.div>
             )}
 

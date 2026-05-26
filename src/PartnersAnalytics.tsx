@@ -1,32 +1,93 @@
-import { useState } from 'react';
-import { Download, Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, Search, RefreshCw, BarChart2 } from 'lucide-react';
+import { supabase } from './lib/supabase';
 
-const mockAnalytics = [
-  { id: '1', name: 'Gnatus', category: 'Equipamentos Odontológicos', whatsapp: 145, email: 32, total: 177, status: 'Ativo' },
-  { id: '2', name: 'Dental Speed', category: 'Insumos / Imagem', whatsapp: 210, email: 55, total: 265, status: 'Ativo' },
-  { id: '3', name: 'Ibramed', category: 'Estética e Fisioterapia', whatsapp: 89, email: 12, total: 101, status: 'Ativo' },
-  { id: '4', name: 'Porto Seguro Saúde', category: 'Seguros para Clínicas', whatsapp: 45, email: 88, total: 133, status: 'Ativo' },
-  { id: '5', name: 'Santander Financiamentos', category: 'Financiamentos', whatsapp: 112, email: 41, total: 153, status: 'Ativo' },
-  { id: '6', name: 'BCMED', category: 'Diagnóstico e Estética', whatsapp: 67, email: 19, total: 86, status: 'Ativo' },
-  { id: '7', name: 'Dental Cremer', category: 'Insumos / Imagem', whatsapp: 188, email: 64, total: 252, status: 'Ativo' },
-  { id: '8', name: 'Medical Company', category: 'Mobiliário Clínico', whatsapp: 34, email: 11, total: 45, status: 'Ativo' },
-  { id: '9', name: 'Dentsply Sirona', category: 'Análises e Laboratório', whatsapp: 56, email: 23, total: 79, status: 'Ativo' },
-  { id: '10', name: 'Preven', category: 'Uniformes e Descartáveis', whatsapp: 92, email: 14, total: 106, status: 'Ativo' },
-];
+interface PartnersAnalyticsProps {
+  clinicId?: string;
+}
 
-export default function PartnersAnalytics() {
+interface PartnerGroup {
+  id: string;
+  name: string;
+  category: string;
+  whatsapp: number;
+  website: number;
+  total: number;
+}
+
+export default function PartnersAnalytics({ clinicId: _clinicId }: PartnersAnalyticsProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [analyticsData, setAnalyticsData] = useState<PartnerGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filteredData = mockAnalytics
-    .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.category.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a, b) => b.total - a.total); // Ordena por total de cliques decrescente
+  const fetchAnalytics = async (showRefresher = false) => {
+    if (showRefresher) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('solara_partners_clicks')
+        .select('*');
+
+      if (error) {
+        // Se a tabela não existe ainda no Supabase, criamos uma estrutura vazia amigável
+        console.warn('Tabela de cliques de parceiros não encontrada ou vazia:', error.message);
+        setAnalyticsData([]);
+        return;
+      }
+
+      // Agrupar e somar os cliques dinamicamente no frontend
+      const groups: { [key: string]: PartnerGroup } = {};
+
+      data?.forEach((click: any) => {
+        const key = click.partner_id;
+        if (!groups[key]) {
+          groups[key] = {
+            id: key,
+            name: click.partner_name,
+            category: click.category_title,
+            whatsapp: 0,
+            website: 0,
+            total: 0
+          };
+        }
+
+        if (click.click_type === 'whatsapp') {
+          groups[key].whatsapp += 1;
+        } else if (click.click_type === 'website') {
+          groups[key].website += 1;
+        }
+        groups[key].total += 1;
+      });
+
+      // Ordenar do parceiro com mais cliques para o com menos
+      const sortedData = Object.values(groups).sort((a, b) => b.total - a.total);
+      setAnalyticsData(sortedData);
+    } catch (err) {
+      console.error('Erro geral ao carregar dados de analíticos:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  const filteredData = analyticsData
+    .filter(item => 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      item.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div style={{ marginTop: 40 }}>
+    <div style={{ marginTop: 40, fontFamily: "'Outfit', sans-serif" }}>
       {/* Estilos para Impressão PDF */}
       <style>{`
         @media print {
@@ -49,32 +110,57 @@ export default function PartnersAnalytics() {
         }
       `}</style>
 
-      <div id="printable-report" style={{ background: '#fff', borderRadius: 2, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+      <div id="printable-report" style={{ background: '#fff', borderRadius: 12, padding: '32px', border: '1px solid rgba(0,0,0,0.03)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#130f40', marginBottom: 4 }}>Performance de Parceiros</h3>
-            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Relatório de cliques e engajamento do Marketplace B2B Solara Connect.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <BarChart2 size={24} color="#130f40" />
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#130f40', margin: 0 }}>Performance de Parceiros</h3>
+            </div>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>Relatório de cliques e engajamento real do Marketplace B2B Solara Connect.</p>
           </div>
           
-          <button 
-            onClick={handlePrint}
-            className="no-print"
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 8, 
-              background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)', 
-              color: '#fff', 
-              border: 'none', 
-              padding: '12px 24px', 
-              borderRadius: 2, 
-              fontWeight: 600, 
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(19,15,64,0.2)'
-            }}
-          >
-            <Download size={18} /> Exportar PDF
-          </button>
+          <div style={{ display: 'flex', gap: 8 }} className="no-print">
+            <button
+              onClick={() => fetchAnalytics(true)}
+              disabled={loading || refreshing}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f1f5f9',
+                color: '#475569',
+                border: '1px solid #cbd5e1',
+                padding: '12px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              title="Atualizar dados"
+            >
+              <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
+            </button>
+            
+            <button 
+              onClick={handlePrint}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 8, 
+                background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)', 
+                color: '#fff', 
+                border: 'none', 
+                padding: '12px 24px', 
+                borderRadius: '8px', 
+                fontWeight: 600, 
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(19,15,64,0.2)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Download size={18} /> Exportar PDF
+            </button>
+          </div>
         </div>
 
         <div className="no-print" style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
@@ -85,50 +171,67 @@ export default function PartnersAnalytics() {
               placeholder="Buscar por fornecedor ou categoria..." 
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem' }}
+              style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem' }}
             />
           </div>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
-                <th style={{ padding: '16px', color: '#64748b', fontWeight: 600, fontSize: '0.9rem' }}>Fornecedor</th>
-                <th style={{ padding: '16px', color: '#64748b', fontWeight: 600, fontSize: '0.9rem' }}>Categoria</th>
-                <th style={{ padding: '16px', color: '#64748b', fontWeight: 600, fontSize: '0.9rem', textAlign: 'center' }}>Cliques WhatsApp</th>
-                <th style={{ padding: '16px', color: '#64748b', fontWeight: 600, fontSize: '0.9rem', textAlign: 'center' }}>Cliques E-mail</th>
-                <th style={{ padding: '16px', color: '#130f40', fontWeight: 700, fontSize: '0.9rem', textAlign: 'center' }}>Total Interações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.map((item, index) => (
-                <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', background: index % 2 === 0 ? '#fff' : '#f8fafc' }}>
-                  <td style={{ padding: '16px', fontWeight: 600, color: '#130f40' }}>{item.name}</td>
-                  <td style={{ padding: '16px', color: '#64748b', fontSize: '0.9rem' }}>{item.category}</td>
-                  <td style={{ padding: '16px', textAlign: 'center', color: '#25D366', fontWeight: 600 }}>{item.whatsapp}</td>
-                  <td style={{ padding: '16px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>{item.email}</td>
-                  <td style={{ padding: '16px', textAlign: 'center', color: '#130f40', fontWeight: 800 }}>{item.total}</td>
+          {loading ? (
+            <div style={{ padding: '64px', textAlign: 'center', color: '#64748b' }}>
+              <RefreshCw size={36} className="animate-spin" style={{ margin: '0 auto 16px auto', animation: 'spin 1s linear infinite', color: '#130f40' }} />
+              <p style={{ fontWeight: 600 }}>Carregando dados reais do Supabase...</p>
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                  <th style={{ padding: '16px', color: '#64748b', fontWeight: 600, fontSize: '0.9rem' }}>Fornecedor</th>
+                  <th style={{ padding: '16px', color: '#64748b', fontWeight: 600, fontSize: '0.9rem' }}>Categoria</th>
+                  <th style={{ padding: '16px', color: '#64748b', fontWeight: 600, fontSize: '0.9rem', textAlign: 'center' }}>Cliques WhatsApp</th>
+                  <th style={{ padding: '16px', color: '#64748b', fontWeight: 600, fontSize: '0.9rem', textAlign: 'center' }}>Cliques Site</th>
+                  <th style={{ padding: '16px', color: '#130f40', fontWeight: 700, fontSize: '0.9rem', textAlign: 'center' }}>Total Interações</th>
                 </tr>
-              ))}
-              {filteredData.length === 0 && (
-                <tr>
-                  <td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>
-                    Nenhum fornecedor encontrado.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredData.map((item, index) => (
+                  <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', background: index % 2 === 0 ? '#fff' : '#f8fafc' }}>
+                    <td style={{ padding: '16px', fontWeight: 600, color: '#130f40' }}>{item.name}</td>
+                    <td style={{ padding: '16px', color: '#64748b', fontSize: '0.9rem' }}>{item.category}</td>
+                    <td style={{ padding: '16px', textAlign: 'center', color: '#25D366', fontWeight: 600 }}>{item.whatsapp}</td>
+                    <td style={{ padding: '16px', textAlign: 'center', color: '#3b82f6', fontWeight: 600 }}>{item.website}</td>
+                    <td style={{ padding: '16px', textAlign: 'center', color: '#130f40', fontWeight: 800 }}>{item.total}</td>
+                  </tr>
+                ))}
+                {filteredData.length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>📈</span>
+                      Nenhum clique registrado no banco de dados ainda. 
+                      <br />Os novos cliques manuais aparecerão aqui instantaneamente.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Resumo Rodapé para PDF */}
         <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: '0.85rem' }}>
           <div>Relatório gerado automaticamente por <strong>Solara Connect Analytics</strong>.</div>
-          <div>Total de Parceiros Listados: <strong>{filteredData.length}</strong></div>
+          <div>Total de Parceiros com Atividade: <strong>{filteredData.length}</strong></div>
         </div>
 
       </div>
+      
+      {/* CSS Spin Keyframe */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

@@ -143,6 +143,7 @@ schema.sql                    # Schema completo do banco
 | `subscriptions` | Assinaturas Stripe | Acesso por owner |
 | `onboarding_tokens` | Tokens de senha provisória | Acesso por e-mail |
 | `email_logs` | Registro de e-mails enviados | Acesso por owner |
+| `solara_partners_clicks` | Cliques manuais e leads de parceiros B2B | Inserção livre, leitura pública |
 
 ### 5.2 Relações
 - `plans` → `clinics` (1:N) — cada clínica tem um plano
@@ -215,6 +216,12 @@ schema.sql                    # Schema completo do banco
 - Provider: Evolution API
 - Base URL: https://evoapi.axoshub.com
 
+### 8.4 Marketplace de Parceiros (Monetização)
+- **Função:** Catálogo completo de 94 parceiros comerciais, organizados por 13 categorias geográficas e de especialidade.
+- **Rastreio de Cliques:** Lógica assíncrona não-bloqueante (`trackPartnerClick`) para registrar cliques manuais dos usuários em canais de contato (site/WhatsApp).
+- **Isolamento Completo:** A ativação do rastreio e consultas ao Supabase ocorre unicamente quando a página de Parceiros é exibida.
+- **Analytics Integrado:** Dashboard real baseado na consolidação dos logs de cliques da tabela `solara_partners_clicks` em tempo real.
+
 ---
 
 ## 9. Roadmap
@@ -228,6 +235,7 @@ schema.sql                    # Schema completo do banco
 - [x] Schema SQL completo com RLS
 - [x] Logo e Design System padronizados
 - [x] PRD documentado
+- [x] Portal de Parceiros B2B Monetizado com Rastreio de Cliques e Analytics (Supabase)
 
 ### v1.1 — Pagamentos Reais
 - [ ] Stripe Elements no Checkout
