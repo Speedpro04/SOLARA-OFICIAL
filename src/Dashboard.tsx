@@ -737,7 +737,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
   };
 
   // Derived Global Search Results
-  const globalSearchResults = globalSearch.trim() === '' ? [] : [
+  const globalSearchResults: any[] = globalSearch.trim() === '' ? [] : [
     ...menuItems.filter(m => m.label.toLowerCase().includes(globalSearch.toLowerCase())).map(m => ({ type: 'menu', id: m.id, label: m.label, icon: m.icon })),
     ...patientsList.filter(p => p.name.toLowerCase().includes(globalSearch.toLowerCase())).map(p => ({ type: 'patient', id: p.id, label: p.name, data: p })),
     ...specialistsList.filter(s => s.name.toLowerCase().includes(globalSearch.toLowerCase())).map(s => ({ type: 'specialist', id: s.id, label: s.name }))

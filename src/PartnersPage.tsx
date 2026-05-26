@@ -1,4 +1,4 @@
-import { Globe, MessageCircle, Mail, ExternalLink, ShieldCheck, Crown } from 'lucide-react';
+import { Globe, ExternalLink, ShieldCheck, Crown } from 'lucide-react';
 
 interface Partner {
   id: string;
