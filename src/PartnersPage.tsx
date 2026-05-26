@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Globe, ShieldCheck, Crown, Search, MapPin, Sparkles, Filter } from 'lucide-react';
 import { supabase } from './lib/supabase';
-import { partnersDataStatic } from './lib/partnersDataStatic';
 
 interface Partner {
   id: string;
@@ -52,7 +51,22 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
   const [partnersList, setPartnersList] = useState<Partner[]>([]);
 
   useEffect(() => {
-    setPartnersList(partnersDataStatic);
+    const fetchPartners = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('solara_partners')
+          .select('*');
+        if (error) {
+          console.warn('Erro ao carregar parceiros do banco (tabela pode estar vazia):', error.message);
+          return;
+        }
+        setPartnersList(data || []);
+      } catch (err) {
+        console.error('Erro ao ler parceiros do Supabase:', err);
+      }
+    };
+
+    fetchPartners();
   }, []);
 
   const partnersData = useMemo(() => {
@@ -415,7 +429,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ fontSize: '2rem' }}>{category.icon}</span>
-                <h3 style={{ fontSize: '1.6rem', fontWeight: 700, color: '#130f40', margin: 0, letterSpacing: '-0.5px' }}>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 500, color: '#130f40', margin: 0, letterSpacing: '-0.5px' }}>
                   {category.title}
                 </h3>
               </div>
@@ -454,8 +468,8 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   position: 'relative',
                   boxShadow: partner.isEmptySlot ? 'none' : '0 10px 25px rgba(0,0,0,0.01)',
-                  height: '100%',
-                  minHeight: '220px',
+                  height: '75px',
+                  minHeight: '75px',
                   overflow: 'hidden'
                 }}
                 onMouseEnter={(e) => {
@@ -537,8 +551,8 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
 
                 {/* Nome do Parceiro */}
                 <h4 style={{ 
-                  fontSize: '1.25rem', 
-                  fontWeight: 700, 
+                  fontSize: '17px', 
+                  fontWeight: 400, 
                   color: partner.isEmptySlot ? '#94a3b8' : '#130f40', 
                   margin: '0 0 8px 0',
                   letterSpacing: '-0.5px'
