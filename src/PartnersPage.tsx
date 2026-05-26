@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Globe, ShieldCheck, Crown, Search, MapPin, Sparkles, Filter } from 'lucide-react';
 import { supabase } from './lib/supabase';
+import { partnersDataStatic } from './lib/partnersDataStatic';
 
 interface Partner {
   id: string;
@@ -51,22 +52,7 @@ export default function PartnersPage({ clinicId }: PartnersPageProps) {
   const [partnersList, setPartnersList] = useState<Partner[]>([]);
 
   useEffect(() => {
-    const fetchPartners = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('solara_partners')
-          .select('*');
-        if (error) {
-          console.warn('Erro ao carregar parceiros do banco (tabela pode estar vazia):', error.message);
-          return;
-        }
-        setPartnersList(data || []);
-      } catch (err) {
-        console.error('Erro ao ler parceiros do Supabase:', err);
-      }
-    };
-
-    fetchPartners();
+    setPartnersList(partnersDataStatic);
   }, []);
 
   const partnersData = useMemo(() => {
