@@ -2,10 +2,10 @@ import os
 from openai import AsyncOpenAI
 from ..config import settings
 
-# A API da Nvidia para LLMs é 100% compatível com a biblioteca da OpenAI
+# Cliente oficial da OpenAI (modelo gpt-5-mini)
 client = AsyncOpenAI(
-    api_key=settings.NVIDIA_API_KEY,
-    base_url=settings.NVIDIA_BASE_URL
+    api_key=settings.OPENAI_API_KEY,
+    base_url=settings.OPENAI_BASE_URL
 )
 
 ALLOWED_CHAT_ROLES = {"user", "assistant"}

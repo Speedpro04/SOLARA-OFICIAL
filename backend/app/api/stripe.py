@@ -245,8 +245,9 @@ async def handle_checkout_completed(session: dict):
     subscription_id = session.get("subscription")
     metadata = session.get("metadata", {})
 
-    clinic_id = metadata.get("clinic_id")
-    user_email = metadata.get("user_email")
+    # Payment Links enviam o clinic_id via client_reference_id (fallback do metadata)
+    clinic_id = metadata.get("clinic_id") or session.get("client_reference_id")
+    user_email = metadata.get("user_email") or session.get("customer_details", {}).get("email")
     plan_name = metadata.get("plan_name")
     plan_price = metadata.get("plan_price")
 

@@ -54,10 +54,10 @@ class Settings:
     STRIPE_PRICE_AVANCADO = os.getenv("STRIPE_PRICE_AVANCADO", "")
     STRIPE_PRICE_ENTERPRISE = os.getenv("STRIPE_PRICE_ENTERPRISE", "")
 
-    # NVIDIA / DeepSeek AI
-    NVIDIA_API_KEY = os.getenv("VITE_AI_API_KEY", "")
-    NVIDIA_BASE_URL = os.getenv("VITE_AI_BASE_URL", "https://integrate.api.nvidia.com/v1")
-    MODEL_LLM = os.getenv("VITE_AI_MODEL", "deepseek-ai/deepseek-v4-flash")
+    # OpenAI AI (LLM principal)
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    MODEL_LLM = os.getenv("OPENAI_MODEL", "gpt-5-mini")
 
     # Maintenance / Dev Pass
     ENABLE_DEV_PASS = os.getenv("ENABLE_DEV_PASS", "false").lower() == "true"

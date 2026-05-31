@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, CheckCircle2, ArrowLeft, MailCheck, LockKeyhole, Lock, AlertCircle } from 'lucide-react';
 import Logo from './Logo';
-import { supabase } from './lib/supabase';
 
 interface CheckoutPageProps {
   planName: string;
@@ -14,6 +13,16 @@ interface CheckoutPageProps {
   onBack: () => void;
   onDevPass?: () => void;
 }
+
+// Mapa de Payment Links do Stripe por valor do plano.
+// O clinic_id vai em client_reference_id e o e-mail em prefilled_email,
+// para o webhook do Stripe vincular a assinatura à clínica correta.
+const STRIPE_PAYMENT_LINKS: Record<string, string> = {
+  '197': import.meta.env.VITE_STRIPE_LINK_BASICO || '',
+  '397': import.meta.env.VITE_STRIPE_LINK_CRESCIMENTO || '',
+  '597': import.meta.env.VITE_STRIPE_LINK_AVANCADO || '',
+  '897': import.meta.env.VITE_STRIPE_LINK_ENTERPRISE || '',
+};
 
 const CheckoutPage: React.FC<CheckoutPageProps> = ({ planName, planPrice, priceId: _priceId, clinicId, userEmail, onPaymentSuccess: _onPaymentSuccess, onBack, onDevPass: _onDevPass }) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -37,46 +46,21 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ planName, planPrice, priceI
     setIsProcessing(true);
 
     try {
-      if (!_priceId) {
-        throw new Error('Preço Stripe não configurado para este plano');
+      const baseLink = STRIPE_PAYMENT_LINKS[planPrice];
+      if (!baseLink) {
+        throw new Error('Link de pagamento Stripe não configurado para este plano');
       }
-      const sessionInfo = await supabase.auth.getSession();
-      const accessToken = sessionInfo.data.session?.access_token;
-      if (!accessToken) {
-        throw new Error('Sessão expirada. Faça login novamente.');
+      if (!clinicId) {
+        throw new Error('Clínica não identificada. Refaça o cadastro.');
       }
 
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBase}/api/stripe/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          price_id: _priceId,
-          success_url: `${window.location.origin}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${window.location.origin}?checkout=cancel`,
-          metadata: {
-            clinic_id: clinicId,
-            user_email: userEmail,
-            plan_name: planName,
-            plan_price: planPrice
-          }
-        })
+      // Anexa client_reference_id (clinic_id) e prefilled_email para o webhook
+      // do Stripe conseguir vincular a assinatura à clínica correta.
+      const params = new URLSearchParams({
+        client_reference_id: clinicId,
+        prefilled_email: userEmail,
       });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.detail || 'Falha ao criar sessão de checkout');
-      }
-
-      const payload = await response.json();
-      if (!payload.url) {
-        throw new Error('Stripe não retornou URL de checkout');
-      }
-
-      window.location.href = payload.url;
+      window.location.href = `${baseLink}?${params.toString()}`;
     } catch (err: any) {
       setError(err.message || 'Erro ao processar pagamento.');
       setIsProcessing(false);

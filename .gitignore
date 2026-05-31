@@ -24,3 +24,5 @@ backend/.env
 *.njsproj
 *.sln
 *.sw?
+# Pasta de credenciais sensíveis (chaves API / payment links)
+API-OPENAI-STRIPE-CHECKOUT/

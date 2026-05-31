@@ -930,11 +930,11 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                   } else {
                     setShowSpecialistModal(true);
                   }
-                }} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 2, fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 10px 20px ${colors.primary}30` }}>
+                }} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 3, fontSize: '15px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 10px 20px ${colors.primary}30` }}>
                   <Plus size={20} /> Novo Especialista
                 </button>
               ) : (
-                <button onClick={() => setShowModal(true)} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 2, fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 10px 20px ${colors.primary}30` }}>
+                <button onClick={() => setShowModal(true)} style={{ background: colors.primary, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 3, fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, boxShadow: `0 10px 20px ${colors.primary}30` }}>
                   <UserPlus size={20} /> {activeTab === 'agenda' ? 'Novo Agendamento' : 'Check-in Rápido'}
                 </button>
               )}
