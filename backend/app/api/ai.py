@@ -60,9 +60,11 @@ def _load_clinic_context(clinic_id: str | None) -> dict | None:
         ctx = dict(clinic_res.data[0])
 
         try:
+            # specialists não possui clinic_id no schema atual (são globais);
+            # carrega os profissionais ativos para compor o contexto.
             sp_res = _supabase_admin.table("specialists").select(
                 "name, specialty"
-            ).eq("clinic_id", clinic_id).limit(50).execute()
+            ).eq("active", True).limit(50).execute()
             ctx["specialists"] = sp_res.data or []
         except Exception:
             ctx["specialists"] = []
