@@ -26,3 +26,10 @@ backend/.env
 *.sw?
 # Pasta de credenciais sensíveis (chaves API / payment links)
 API-OPENAI-STRIPE-CHECKOUT/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Config local do Claude/preview
+.claude/
