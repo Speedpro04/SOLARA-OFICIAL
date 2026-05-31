@@ -1,27 +1,31 @@
 # PRD — Solara Medical Connect
 ### Product Requirements Document
-**Versão:** 1.0  
-**Data:** 02/05/2026  
-**Autor:** Axos Hub  
+**Versão:** 2.0
+**Data:** 31/05/2026
+**Autor:** Axos Hub
 **E-mail operacional:** axoshub.solara@gmail.com
+**Status:** ✅ Em produção (deploy via EasyPanel)
 
 ---
 
 ## 1. Visão Geral do Produto
 
-O **Solara Medical Connect** é uma plataforma SaaS de gestão de recepção digital voltada para **clínicas médicas, consultórios e hospitais**. O sistema automatiza o fluxo de atendimento desde a chegada do paciente até a conclusão da consulta, eliminando filas, otimizando agendas e oferecendo uma experiência premium ao corpo clínico e aos pacientes.
+O **Solara Medical Connect** é uma plataforma SaaS de gestão e atendimento digital para **clínicas médicas, consultórios e hospitais**. O sistema automatiza o fluxo desde a captação e atendimento do paciente até a conclusão da consulta, com uma **IA gestora (Solara)** no centro do atendimento, agendamento inteligente e um marketplace de parceiros monetizado.
 
 ### 1.1 Proposta de Valor
-- **Para clínicas:** Redução de tempo de espera, gestão visual (Kanban) de atendimentos, agendamento inteligente
-- **Para médicos:** Prontuário unificado disponível antes da consulta, controle total de salas
-- **Para pacientes:** Experiência sem filas, comunicação via WhatsApp, transparência total
+- **Para clínicas:** atendimento 24/7 via IA, redução de tempo de espera, gestão visual de atendimentos, agendamento inteligente e uma fonte extra de valor (marketplace de fornecedores).
+- **Para médicos:** prontuário unificado, controle de salas, menos tempo perdido com recados.
+- **Para pacientes:** atendimento imediato via WhatsApp, sem filas, com acolhimento e clareza.
 
-### 1.2 Público-Alvo
+### 1.2 Diferencial Central — A Solara IA
+A **Solara** é o cérebro do sistema: uma gestora virtual de atendimento que acolhe, agenda, confirma, remarca, tira dúvidas e converte leads — com **dados reais da clínica** e **sem inventar informações**. É o que separa o Solara de um "sistema bonito" de uma plataforma inteligente.
+
+### 1.3 Público-Alvo
 | Segmento | Perfil |
 |----------|--------|
-| Primário | Clínicas médicas de 2 a 20 especialistas |
+| Primário | Clínicas médicas/odontológicas de 2 a 20 especialistas |
 | Secundário | Consultórios individuais em expansão |
-| Terciário | Redes hospitalares e franquias de saúde |
+| Terciário | Redes e franquias de saúde |
 
 ---
 
@@ -34,71 +38,84 @@ O **Solara Medical Connect** é uma plataforma SaaS de gestão de recepção dig
 | **Animações** | Framer Motion |
 | **Ícones** | Lucide React |
 | **Estilização** | CSS Vanilla (Design System próprio) |
+| **Backend** | FastAPI (Python) + Celery + Redis |
+| **IA / LLM** | **OpenAI `gpt-5-mini`** (reasoning_effort low) |
+| **WhatsApp** | Evolution API |
 | **Autenticação** | Supabase Auth (JWT) |
 | **Banco de Dados** | PostgreSQL (Supabase) |
-| **Pagamentos** | Stripe (Checkout + Webhooks) |
+| **Pagamentos** | Stripe (Payment Links + Webhooks) |
 | **E-mail** | SMTP Gmail (axoshub.solara@gmail.com) |
-| **Hospedagem** | Vercel / Netlify (Frontend) + Supabase (Backend) |
+| **Hospedagem** | EasyPanel (frontend + backend) + Supabase |
 
 ### 2.2 Credenciais do Projeto
 | Serviço | Referência |
 |---------|-----------|
-| Supabase URL | `https://mvqkelauwscxdwnzevtz.supabase.co` |
-| Supabase Project ID | `mvqkelauwscxdwnzevtz` |
-| Stripe Account | Modo Test |
-| E-mail Remetente | `axoshub.solara@gmail.com` |
+| Supabase Project ID | `mvqkelauwscxdwnzevtz` ("App-Solara-Connect-Oficial") |
+| App (frontend) | `https://app.solaraconnect.online` |
+| API (backend) | `https://solaraconnect.online` |
+| Evolution API | `https://evoapi.axoshub.com` |
+| Stripe | Modo Test (Payment Links ativos) |
+| Repositório | `github.com/Speedpro04/SOLARA-OFICIAL` |
+
+> 🔒 Segredos (OpenAI, Stripe, Supabase Service Role) ficam **só no EasyPanel** — nunca no Git.
 
 ### 2.3 Estrutura de Arquivos
 ```
-src/
-├── lib/
-│   ├── supabase.ts          # Cliente Supabase (singleton)
-│   └── auth.ts              # Serviço de autenticação completo
-├── App.tsx                   # Router principal (state-based)
-├── LandingPage.tsx           # Página de vendas (1140px container)
-├── LoginPage.tsx             # Login (split-screen dark)
-├── RegisterPage.tsx          # Cadastro de clínica
-├── CheckoutPage.tsx          # Pagamento + ativação
-├── Dashboard.tsx             # Painel de gestão
-├── Logo.tsx                  # Componente de logo reutilizável
-├── index.css                 # Design System global
-└── main.tsx                  # Entry point
-schema.sql                    # Schema completo do banco
-.env                          # Variáveis de ambiente
+src/                              # Frontend React
+├── lib/{supabase.ts, auth.ts}
+├── App.tsx                        # Router (state-based) + lazy load
+├── LandingPage.tsx                # Página de vendas + planos
+├── LoginPage / RegisterPage
+├── CheckoutPage.tsx               # Redireciona ao Stripe Payment Link
+├── Dashboard.tsx                  # Painel + chat da Solara IA
+├── PartnersPage.tsx               # Marketplace de parceiros
+├── PartnersAnalytics.tsx          # Relatório de cliques (monetização)
+└── Logo.tsx
+
+backend/app/                       # Backend FastAPI
+├── main.py / config.py
+├── api/{ai.py, stripe.py, whatsapp.py, evolution.py}
+├── services/{ai_service.py, supabase_service.py}
+├── tasks.py / celery_app.py       # Filas assíncronas
+└── solara_agent.py
+
+SOLARA_PARTNERS_SETUP.sql          # Tabelas de cliques (monetização)
+SOLARA_PROJECT_GUIDE.md            # Guia técnico do projeto
+RELATORIO-MELHORIAS-SOLARA.md      # Changelog de evolução
 ```
 
 ---
 
-## 3. Design System
+## 3. Solara IA — Gestora de Atendimento (cérebro do sistema)
 
-### 3.1 Paleta de Cores
-| Nome | Hex | Uso |
-|------|-----|-----|
-| **Primary** | `#130f40` | Sidebar, textos principais, fundos escuros |
-| **Background** | `#ffffff` | Fundo geral da LP e Dashboard |
-| **Card Background** | `#f7f1e3` | Cards, seções alternadas |
-| **Card Border** | `#7ed6df` | Bordas de cards, destaques ciano |
-| **Success / CTA** | `#33d9b2` | Botões primários, status ativo |
-| **Danger** | `#ff5252` | Alertas, botão sair, erros |
-| **Warning** | `#ffda79` | Destaques, badge "Mais Escolhido" |
-| **Extra** | `#ff793f` | Cor auxiliar para variações |
+### 3.1 Papel
+Gestora virtual que recebe, acolhe, organiza, argumenta e conduz o próximo passo — vendendo valor sem pressionar e convertendo interesse em agendamento.
 
-### 3.2 Tipografia
-- **Família:** Outfit (Google Fonts)
-- **Pesos:** 400 (body), 500 (labels), 600 (subtítulos), 700 (botões), 800 (títulos)
+### 3.2 Capacidades
+- Agendamentos, remarcações, confirmações e cancelamentos
+- Coleta estruturada de dados (nome, telefone, especialidade, data, particular/convênio)
+- Qualificação e conversão de novos pacientes
+- Escalonamento de urgência clínica e transferência para humano
 
-### 3.3 Padrão Visual das Páginas Auth
-- Layout **split-screen** (35% formulário / 65% visual)
-- Fundo escuro: `#0a0822` (esquerda) + `#130f40` (direita)
-- Inputs com borda ciano ao receber foco
-- Ícone grande com efeito glassmorphism no painel direito
-- Logo Solara Medical centralizada acima do formulário
+### 3.3 Contexto Dinâmico
+A cada conversa, o backend injeta no prompt os **dados reais da clínica** (nome, telefone, e-mail, endereço, profissionais), carregados via `clinic_id` do Supabase.
+
+### 3.4 Guardrails (confiança)
+- **Nunca** inventa preço, horário, disponibilidade, profissional, convênio ou endereço.
+- Usa apenas os dados injetados; sem o dado → pergunta ou encaminha à equipe.
+- Não dá diagnóstico, prescrição ou interpretação de exame.
+
+### 3.5 Configuração técnica
+- Modelo: `gpt-5-mini` · `temperature 0.4` · `max_tokens 1024` · `reasoning_effort: low`
+- Prompt-mestre: `backend/app/services/ai_service.py`
+- Playbook: `SOLARA_AI_PLAYBOOK.md`
+- Endpoint: `POST /api/ai/chat` (com **rate-limit** de 20 req/min por IP)
 
 ---
 
 ## 4. Modelo de Negócio — Planos
 
-### 4.1 Tabela de Preços
+### 4.1 Tabela de Preços (Stripe Payment Links)
 | Plano | Especialistas | Preço/mês | Slug |
 |-------|--------------|-----------|------|
 | **Básico** | Até 2 | R$ 197,00 | `basico` |
@@ -107,155 +124,103 @@ schema.sql                    # Schema completo do banco
 | **Enterprise** | 10+ | R$ 897,00 | `enterprise` |
 
 > O plano **Avançado** é destacado como "Mais Escolhido" na Landing Page.
+> Cada plano aponta para um **Stripe Payment Link**; o `clinic_id` é enviado via
+> `client_reference_id` para o webhook vincular a assinatura à clínica.
 
-### 4.2 Features por Plano
-| Feature | Básico | Crescimento | Avançado | Enterprise |
-|---------|--------|-------------|----------|------------|
-| Gestão de Salas | ✅ | ✅ | ✅ | ✅ |
-| Prontuário Integrado | ✅ | ✅ | ✅ | ✅ |
-| Suporte por e-mail | ✅ | ✅ | ✅ | ✅ |
-| Relatórios básicos | ✅ | ✅ | ✅ | ✅ |
-| Agendamento online | ❌ | ✅ | ✅ | ✅ |
-| WhatsApp integrado | ❌ | ✅ | ✅ | ✅ |
-| Suporte prioritário | ❌ | ✅ | ✅ | ✅ |
-| Gestão financeira | ❌ | ❌ | ✅ | ✅ |
-| NPS automático | ❌ | ❌ | ✅ | ✅ |
-| Automações de fluxo | ❌ | ❌ | ✅ | ✅ |
-| Suporte 24/7 | ❌ | ❌ | ✅ | ✅ |
-| API dedicada | ❌ | ❌ | ❌ | ✅ |
-| Gerente de conta | ❌ | ❌ | ❌ | ✅ |
-| SLA garantido | ❌ | ❌ | ❌ | ✅ |
-| Personalização | ❌ | ❌ | ❌ | ✅ |
-| Treinamento presencial | ❌ | ❌ | ❌ | ✅ |
+### 4.2 Dupla Receita
+1. **Assinaturas** das clínicas (recorrente)
+2. **Marketplace de parceiros** — monetização de fornecedores por exposição/cliques
 
 ---
 
 ## 5. Schema do Banco de Dados
 
-### 5.1 Tabelas
+### 5.1 Tabelas principais
 | Tabela | Descrição | RLS |
 |--------|-----------|-----|
-| `plans` | Planos de assinatura (4 registros) | SELECT público, write owner |
-| `clinics` | Clínicas cadastradas | Isolamento por `owner_auth_id` |
-| `users` | Staff da clínica (médicos, recepcionistas) | Isolamento por `clinic_id` |
-| `patients` | Pacientes da clínica | Isolamento por `clinic_id` |
-| `appointments` | Agendamentos e consultas | Isolamento por `clinic_id` |
+| `plans` | Planos de assinatura | SELECT público |
+| `clinics` | Clínicas (name, email, phone, address...) | Isolamento por `owner_auth_id` |
+| `users` | Staff da clínica | Isolamento por `clinic_id` |
+| `specialists` | Profissionais da clínica | Isolamento por `clinic_id` |
+| `patients` | Pacientes | Isolamento por `clinic_id` |
+| `appointments` | Agendamentos | Isolamento por `clinic_id` |
 | `subscriptions` | Assinaturas Stripe | Acesso por owner |
-| `onboarding_tokens` | Tokens de senha provisória | Acesso por e-mail |
-| `email_logs` | Registro de e-mails enviados | Acesso por owner |
-| `solara_partners_clicks` | Cliques manuais e leads de parceiros B2B | Inserção livre, leitura pública |
-
-### 5.2 Relações
-- `plans` → `clinics` (1:N) — cada clínica tem um plano
-- `clinics` → `users` (1:N) — cada clínica tem vários membros
-- `clinics` → `patients` (1:N) — cada clínica tem seus pacientes
-- `clinics` → `appointments` (1:N) — agendamentos por clínica
-- `clinics` → `subscriptions` (1:N) — histórico de assinaturas
-- `users` → `appointments` (1:N) — médico responsável
-- `patients` → `appointments` (1:N) — paciente do agendamento
+| `onboarding_tokens` | Senhas provisórias | Acesso por e-mail |
+| `email_logs` | E-mails enviados | Acesso por owner |
+| `whatsapp_messages` | Mensagens WhatsApp | Isolamento por `clinic_id` |
+| `solara_partners_clicks` | Cliques de parceiros (monetização) — `clinic_id TEXT` | Inserção/leitura pública |
 
 ---
 
 ## 6. Fluxos do Usuário
 
 ### 6.1 Onboarding (Novo Cliente)
-1. Landing Page → Escolhe Plano → Clica "Assinar Agora"
-2. Página de Cadastro → Nome da clínica, e-mail, senha
-3. Sistema cria: auth.user, clinic, user (owner), subscription (pending), onboarding_token
-4. Redireciona para Checkout com plano selecionado
-5. Checkout → Preenche cartão → "Finalizar Pagamento"
-6. Ativa subscription (status=active), registra email_log
-7. Exibe tela de sucesso com dados do e-mail
-8. Redireciona para Dashboard automaticamente
+1. Landing Page → escolhe plano → cadastro (clínica, e-mail, senha)
+2. Sistema cria auth.user, clinic, user (owner), subscription (pending)
+3. Checkout → **Stripe Payment Link** (com `client_reference_id`)
+4. Webhook `checkout.session.completed` → ativa assinatura da clínica
+5. Acesso liberado ao Dashboard (após `hasActiveSubscription`)
 
-### 6.2 Login (Cliente Existente)
-1. Landing Page → "Acesso Restrito" → Tela de Login
-2. E-mail + Senha → signInWithPassword
-3. Busca perfil completo (user + clinic + plan)
-4. Redireciona para Dashboard
+### 6.2 Atendimento via Solara
+1. Paciente envia mensagem (Dashboard ou WhatsApp/Evolution)
+2. `POST /api/ai/chat` com `clinic_id` → carrega contexto da clínica
+3. Solara responde com guardrails e conduz o próximo passo
 
-### 6.3 Logout
-1. Dashboard → Botão "Sair"
-2. supabase.auth.signOut()
-3. Limpa estado → Volta para Landing Page
+### 6.3 Marketplace / Monetização
+1. Clínica acessa aba Parceiros → 70 fornecedores reais em 13 categorias
+2. Clique em "Acessar Site" → grava em `solara_partners_clicks`
+3. Relatório "Performance de Parceiros" consolida cliques (exporta PDF)
 
 ---
 
 ## 7. Segurança
 
-### 7.1 Row Level Security (RLS)
-- Todas as tabelas têm RLS habilitado
-- Isolamento por tenant (clinic_id)
-- Plans: Leitura pública (LP precisa exibir preços)
-
-### 7.2 Autenticação
-- Método: E-mail + Senha (Supabase Auth)
-- JWT: Auto-refresh habilitado
-- Sessão: Persistida no localStorage
-- Senha provisória: 12 chars alfanumérico + especiais
-
-### 7.3 Conformidade
-- **LGPD:** Dados isolados por clínica, retenção configurável
-- **HIPAA-ready:** Criptografia em trânsito e em repouso
+- **RLS** habilitado em todas as tabelas (isolamento por `clinic_id`)
+- **Rate-limit** no endpoint da IA (20 req/min por IP) — protege a cota OpenAI
+- Segredos fora do Git (`.gitignore`) — só no EasyPanel
+- Endpoints de pagamento validam owner; webhook com verificação de assinatura Stripe
+- Auth via Supabase (JWT auto-refresh, sessão persistida)
+- **LGPD:** dados isolados por clínica · **HIPAA-ready:** criptografia em trânsito/repouso
 
 ---
 
 ## 8. Integrações
 
-### 8.1 Stripe (Pagamentos)
-- Modo: Test (sandbox)
-- Checkout simulado na v1.0
-- Webhook configurado para produção
+### 8.1 OpenAI (IA) — ✅ produção
+- Modelo `gpt-5-mini`, validado em produção. Ver seção 3.
 
-### 8.2 E-mail (SMTP Gmail)
-- Remetente: axoshub.solara@gmail.com
-- Templates: welcome, payment_confirmed, password_reset
-- Logs registrados na tabela email_logs
+### 8.2 Stripe (Pagamentos) — ✅ produção
+- Payment Links nos 4 planos + webhook vinculando assinatura à clínica.
 
-### 8.3 WhatsApp (Evolution API) — v2.0
-- Provider: Evolution API
-- Base URL: https://evoapi.axoshub.com
+### 8.3 WhatsApp (Evolution API) — ✅ implementado
+- Base: `https://evoapi.axoshub.com` · instância `axos-evoapi`.
 
-### 8.4 Marketplace de Parceiros (Monetização)
-- **Função:** Catálogo completo de 94 parceiros comerciais, organizados por 13 categorias geográficas e de especialidade.
-- **Rastreio de Cliques:** Lógica assíncrona não-bloqueante (`trackPartnerClick`) para registrar cliques manuais dos usuários em canais de contato (site/WhatsApp).
-- **Isolamento Completo:** A ativação do rastreio e consultas ao Supabase ocorre unicamente quando a página de Parceiros é exibida.
-- **Analytics Integrado:** Dashboard real baseado na consolidação dos logs de cliques da tabela `solara_partners_clicks` em tempo real.
+### 8.4 Marketplace de Parceiros (Monetização) — ✅ produção
+- 70 fornecedores reais (links verificados) em 13 categorias, incluindo Regional Vale do Paraíba.
+- Rastreio de cliques assíncrono + relatório consolidado com exportação PDF.
 
 ---
 
 ## 9. Roadmap
 
-### v1.0 — MVP (Atual)
-- [x] Landing Page premium com seção de preços
-- [x] Tela de Login (dark split-screen)
-- [x] Tela de Cadastro integrada com Supabase Auth
-- [x] Tela de Checkout com ativação de subscription
-- [x] Dashboard de recepção digital
-- [x] Schema SQL completo com RLS
-- [x] Logo e Design System padronizados
-- [x] PRD documentado
-- [x] Portal de Parceiros B2B Monetizado com Rastreio de Cliques e Analytics (Supabase)
+### ✅ Entregue (v1 → v2)
+- [x] Landing, Login, Cadastro, Checkout, Dashboard
+- [x] Backend FastAPI + Celery + Supabase
+- [x] **Solara IA Manager** (contexto dinâmico + guardrails)
+- [x] Migração para OpenAI `gpt-5-mini`
+- [x] Pagamentos reais (Stripe Payment Links + webhook)
+- [x] WhatsApp (Evolution API)
+- [x] Marketplace B2B com 70 parceiros + contagem de cliques + analytics
+- [x] Segurança (rate-limit, RLS) e performance (code-splitting)
+- [x] Deploy em produção (EasyPanel) — 31/05/2026
 
-### v1.1 — Pagamentos Reais
-- [ ] Stripe Elements no Checkout
-- [ ] Webhook para confirmação automática
-- [ ] Gerenciamento de assinatura
-- [ ] Upgrade/downgrade de plano
-
-### v1.2 — E-mails Reais
-- [ ] Edge Function para envio SMTP
-- [ ] Templates HTML de e-mail
-- [ ] Fila de envio com retry
-
-### v2.0 — Operação Completa
-- [ ] Kanban funcional (drag-and-drop)
-- [ ] Agendamentos com calendário visual
-- [ ] Prontuário eletrônico
-- [ ] Integração WhatsApp
-- [ ] NPS automático pós-consulta
-- [ ] Relatórios com gráficos
-- [ ] Multi-tenant completo
+### 🔜 Próximos
+- [ ] **RAG + Embeddings (pgvector)** — Solara responde por documentos reais da clínica
+- [ ] **Sistema de vendas automático** (FastAPI + Celery + Evolution + LLM)
+- [ ] Cadastro guiado dos dados da clínica (alimenta o contexto da IA)
+- [ ] Kanban/agenda visual, prontuário eletrônico, NPS automático
+- [ ] Testes automatizados
+- [ ] Otimização da LandingPage (imagens base64 → arquivos)
 
 ---
 
@@ -264,11 +229,12 @@ schema.sql                    # Schema completo do banco
 |---------|------|
 | Tempo de cadastro até dashboard | < 3 minutos |
 | Taxa de conversão LP → Cadastro | > 5% |
+| Taxa de resposta da Solara | > 95% |
 | Uptime do sistema | > 99.5% |
 | NPS dos médicos | > 70 |
 | Churn mensal | < 5% |
 
 ---
 
-> **Documento confidencial.** Propriedade intelectual da Axos Hub.  
-> Última atualização: 02/05/2026
+> **Documento confidencial.** Propriedade intelectual da Axos Hub.
+> Última atualização: 31/05/2026 (v2.0)
