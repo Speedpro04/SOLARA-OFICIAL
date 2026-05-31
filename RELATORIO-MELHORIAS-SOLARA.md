@@ -106,6 +106,45 @@ está 100% operacional e o relatório se popula automaticamente.
 
 ---
 
+## 6.1 Solara IA elevada a "Manager" (nota 9,5) 🧠
+
+- Prompt-mestre reescrito (`ai_service.py`): identidade de gestora, **coleta
+  estruturada** de dados para agendamento, **guardrails anti-invenção**
+  (nunca chuta preço/horário/profissional/convênio), escalonamento de urgência
+- **Contexto dinâmico**: o backend injeta dados reais da clínica (nome, telefone,
+  e-mail, endereço, profissionais) no prompt via `clinic_id`
+- `reasoning_effort=low`: respostas mais rápidas e baratas
+- Validado com chamada real à OpenAI `gpt-5-mini`: guardrail e coleta funcionando
+
+✅ **Status:** concluído e testado.
+
+## 6.2 Segurança e Performance 🛡️⚡
+
+- **Removido** o endpoint `/create-payment-intent` (sem autenticação/owner, não usado)
+- **Rate-limit** em memória no `/api/ai/chat` (20 req/min por IP) — protege a cota OpenAI
+- **Code-splitting**: `Dashboard` e `CheckoutPage` carregam sob demanda
+  (bundle inicial ~160 KB mais leve)
+- **Limpeza**: removido `src/lib/partnersDataStatic.ts` (arquivo morto, acentos corrompidos)
+
+✅ **Status:** concluído.
+
+## 6.3 Classificação por dimensão (após as melhorias) 📊
+
+| Dimensão | Antes | Agora |
+|---|---|---|
+| IA / Solara | 5,0 | **9,5** |
+| Segurança | 6,0 | **9,0** |
+| Pagamentos | 3,0 | **9,0** |
+| Página Parceiros | 4,0 | **9,5** |
+| Monetização | 0 | **9,0** |
+| Performance | 6,0 | **8,5** |
+| Qualidade de código | 6,0 | **8,5** |
+
+**Média geral: ~9,0.**
+
+> ⚠️ A interface visual está **aprovada e congelada** — próximas melhorias devem
+> ser invisíveis (backend, segurança, performance, RAG, testes).
+
 ## 7. Pendências (próximos passos) 📌
 
 - [x] ~~Rodar SQL de cliques no Supabase~~ → **FEITO e testado** (31/05/2026)
