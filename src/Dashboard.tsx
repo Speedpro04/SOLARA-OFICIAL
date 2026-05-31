@@ -467,6 +467,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
         },
         body: JSON.stringify({
           message: msg,
+          clinic_id: clinicId || undefined,
           chat_history: history
         })
       });
