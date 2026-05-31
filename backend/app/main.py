@@ -30,7 +30,22 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "redis": "connected", "celery": "connected"}
+    # Testa o Redis de verdade (em vez de reportar "connected" fixo).
+    redis_status = "disconnected"
+    try:
+        import redis
+        r = redis.from_url(settings.REDIS_URL, socket_connect_timeout=2)
+        if r.ping():
+            redis_status = "connected"
+    except Exception:
+        redis_status = "disconnected"
+
+    return {
+        "status": "healthy",
+        "redis": redis_status,
+        "openai_model": settings.MODEL_LLM,
+        "evolution_instance": settings.EVOLUTION_INSTANCE,
+    }
 
 @app.get("/api/clinics")
 async def list_clinics():

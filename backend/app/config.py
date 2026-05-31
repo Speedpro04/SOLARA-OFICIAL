@@ -29,6 +29,7 @@ class Settings:
     # Evolution API
     EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "http://localhost:8080")
     EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "")
+    EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "")
 
     # Celery
     CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")

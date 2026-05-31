@@ -4,42 +4,44 @@ from .services.supabase_service import supabase_client
 import httpx
 from datetime import datetime, timedelta
 
+def _evo_instance(clinic_id: str | None = None) -> str:
+    """Instância da Evolution a usar no envio (número único: EVOLUTION_INSTANCE)."""
+    return settings.EVOLUTION_INSTANCE or (clinic_id or "")
+
+
 @shared_task
-def send_whatsapp_message(phone: str, message: str, clinic_id: str):
+def send_whatsapp_message(phone: str, message: str, clinic_id: str | None = None):
     """
-    Envia mensagem WhatsApp via Evolution API
+    Envia mensagem WhatsApp via Evolution API (formato v2).
     """
     try:
-        url = f"{settings.EVOLUTION_API_URL}/message/sendText/{clinic_id}"
+        instance = _evo_instance(clinic_id)
+        url = f"{settings.EVOLUTION_API_URL}/message/sendText/{instance}"
         headers = {"apikey": settings.EVOLUTION_API_KEY}
-        data = {
-            "number": phone,
-            "textMessage": {"text": message}
-        }
-        with httpx.Client() as client:
+        data = {"number": phone, "text": message}
+        with httpx.Client(timeout=30) as client:
             response = client.post(url, json=data, headers=headers)
             return response.json()
     except Exception as e:
         return {"error": str(e)}
 
 @shared_task
-def send_whatsapp_media(phone: str, media_base64: str, media_type: str, caption: str, clinic_id: str):
+def send_whatsapp_media(phone: str, media_base64: str, media_type: str, caption: str, clinic_id: str | None = None):
     """
-    Envia mídia (imagem, áudio, vídeo) via Evolution API
+    Envia mídia (imagem, áudio, vídeo) via Evolution API (formato v2).
     media_type: 'image', 'audio', 'video', 'document'
     """
     try:
-        url = f"{settings.EVOLUTION_API_URL}/message/sendMedia/{clinic_id}"
+        instance = _evo_instance(clinic_id)
+        url = f"{settings.EVOLUTION_API_URL}/message/sendMedia/{instance}"
         headers = {"apikey": settings.EVOLUTION_API_KEY}
         data = {
             "number": phone,
-            "mediaMessage": {
-                "mediatype": media_type,
-                "caption": caption,
-                "media": media_base64
-            }
+            "mediatype": media_type,
+            "caption": caption,
+            "media": media_base64,
         }
-        with httpx.Client() as client:
+        with httpx.Client(timeout=60) as client:
             response = client.post(url, json=data, headers=headers)
             return response.json()
     except Exception as e:
