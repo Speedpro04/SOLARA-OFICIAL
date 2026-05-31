@@ -1,10 +1,16 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
+import httpx
 from ..config import settings
 from ..services.supabase_service import supabase_client
+from ..services.ai_service import chat_with_solara
 import logging
 from typing import Any
 
 router = APIRouter(prefix="/api/webhooks", tags=["webhooks"])
+
+# Conteúdos que não devem disparar resposta automática da Solara.
+_NON_REPLYABLE = {"[audio]", "[mensagem sem texto]"}
+
 
 def _require_webhook_auth(request: Request) -> None:
     if not settings.EVOLUTION_WEBHOOK_SECRET:
@@ -81,6 +87,11 @@ def _extract_remote_jid(message_payload: dict[str, Any]) -> str | None:
     return None
 
 
+def _is_group(remote_jid: str | None) -> bool:
+    """Mensagens de grupo têm o sufixo @g.us — a Solara não responde grupos."""
+    return bool(remote_jid and "@g.us" in remote_jid)
+
+
 def _normalize_phone(remote_jid: str | None) -> str | None:
     if not remote_jid:
         return None
@@ -122,6 +133,25 @@ def _find_clinic_id_by_instance(instance_name: str | None) -> str | None:
     return None
 
 
+def _find_clinic_id_by_phone(phone: str | None) -> str | None:
+    """Cenário multi-clínica (número único): descobre a clínica pelo telefone do paciente."""
+    if not phone:
+        return None
+    try:
+        result = (
+            supabase_client.table("patients")
+            .select("clinic_id")
+            .or_(f"phone.eq.{phone},phone.like.%{phone}%")
+            .limit(1)
+            .execute()
+        )
+        if result.data and result.data[0].get("clinic_id"):
+            return result.data[0]["clinic_id"]
+    except Exception as exc:
+        logging.warning("Falha ao identificar clínica pelo telefone %s: %s", phone, exc)
+    return None
+
+
 def _find_patient_id(clinic_id: str | None, phone: str | None) -> str | None:
     if not phone:
         return None
@@ -138,6 +168,37 @@ def _find_patient_id(clinic_id: str | None, phone: str | None) -> str | None:
         logging.warning("Não foi possível localizar paciente pelo telefone %s: %s", phone, exc)
 
     return None
+
+
+def _fetch_conversation_history(patient_id: str | None, exclude_content: str, limit: int = 10) -> list[dict[str, str]]:
+    """Histórico recente da conversa (para dar memória à Solara), em ordem cronológica."""
+    if not patient_id:
+        return []
+    try:
+        result = (
+            supabase_client.table("messages")
+            .select("content, sender_type, created_at")
+            .eq("patient_id", patient_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        rows = list(reversed(result.data or []))
+        history: list[dict[str, str]] = []
+        for row in rows:
+            content = (row.get("content") or "").strip()
+            if not content or content in _NON_REPLYABLE:
+                continue
+            role = "user" if row.get("sender_type") == "patient" else "assistant"
+            history.append({"role": role, "content": content})
+
+        # Remove a própria mensagem atual (já persistida) do fim do histórico, se presente.
+        if history and history[-1]["role"] == "user" and history[-1]["content"] == exclude_content:
+            history.pop()
+        return history
+    except Exception as exc:
+        logging.warning("Falha ao buscar histórico da conversa: %s", exc)
+        return []
 
 
 def _persist_message(clinic_id: str | None, patient_id: str | None, content: str, sender_type: str, raw_payload: dict[str, Any]) -> None:
@@ -158,7 +219,43 @@ def _persist_message(clinic_id: str | None, patient_id: str | None, content: str
         logging.warning("Webhook recebido, mas falhou ao persistir mensagem no Supabase: %s", exc)
 
 
-async def _handle_evolution_webhook(request: Request, event_slug: str | None = None):
+async def _send_whatsapp_reply(instance_name: str | None, phone: str | None, text: str) -> bool:
+    """Envia a resposta da Solara de volta pelo WhatsApp via Evolution API."""
+    if not (instance_name and phone and text and settings.EVOLUTION_API_KEY):
+        return False
+    url = f"{settings.EVOLUTION_API_URL}/message/sendText/{instance_name}"
+    headers = {"apikey": settings.EVOLUTION_API_KEY, "Content-Type": "application/json"}
+    payload = {"number": phone, "text": text}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(url, headers=headers, json=payload)
+            if response.status_code >= 400:
+                logging.warning("Falha ao enviar resposta WhatsApp para %s: %s", phone, response.text)
+                return False
+            return True
+    except Exception as exc:
+        logging.warning("Erro ao enviar resposta WhatsApp para %s: %s", phone, exc)
+        return False
+
+
+async def _process_solara_reply(instance_name: str | None, phone: str | None, clinic_id: str | None, patient_id: str | None, content: str) -> None:
+    """Gera a resposta da Solara e devolve pelo WhatsApp (executado em background)."""
+    try:
+        from .ai import _load_clinic_context  # import tardio evita ciclo de importação
+        clinic_context = _load_clinic_context(clinic_id) if clinic_id else None
+        history = _fetch_conversation_history(patient_id, content)
+        reply = await chat_with_solara(content, history, clinic_context)
+        if not reply or not reply.strip():
+            return
+        reply = reply.strip()
+        # Registra a resposta da Solara como mensagem enviada
+        _persist_message(clinic_id, patient_id, reply, "clinic", {"source": "solara_ai"})
+        await _send_whatsapp_reply(instance_name, phone, reply)
+    except Exception as exc:
+        logging.exception("Falha ao gerar/enviar resposta da Solara: %s", exc)
+
+
+async def _handle_evolution_webhook(request: Request, background_tasks: BackgroundTasks | None = None, event_slug: str | None = None):
     try:
         _require_webhook_auth(request)
         data = await request.json()
@@ -171,10 +268,7 @@ async def _handle_evolution_webhook(request: Request, event_slug: str | None = N
         if event_name != "MESSAGES_UPSERT" or not message_payload:
             return {"status": "ignored", "event": event_name, "instance": instance_name}
 
-        if _is_from_me(message_payload):
-            sender_type = "clinic"
-        else:
-            sender_type = "patient"
+        sender_type = "clinic" if _is_from_me(message_payload) else "patient"
 
         remote_jid = _extract_remote_jid(message_payload)
         phone = _normalize_phone(remote_jid)
@@ -184,12 +278,29 @@ async def _handle_evolution_webhook(request: Request, event_slug: str | None = N
 
         _persist_message(clinic_id, patient_id, content, sender_type, data)
 
+        # ---- Resposta automática da Solara ----
+        # Só para mensagens de TEXTO, de PACIENTES, fora de grupos.
+        should_reply = (
+            sender_type == "patient"
+            and background_tasks is not None
+            and content
+            and content not in _NON_REPLYABLE
+            and not _is_group(remote_jid)
+        )
+        if should_reply:
+            # Número único multi-clínica: se não achou pela instância, identifica pelo telefone.
+            effective_clinic_id = clinic_id or _find_clinic_id_by_phone(phone)
+            background_tasks.add_task(
+                _process_solara_reply, instance_name, phone, effective_clinic_id, patient_id, content
+            )
+
         return {
             "status": "success",
             "event": event_name,
             "instance": instance_name,
             "clinic_id": clinic_id,
             "patient_id": patient_id,
+            "auto_reply": bool(should_reply),
         }
     except HTTPException:
         raise
@@ -199,16 +310,16 @@ async def _handle_evolution_webhook(request: Request, event_slug: str | None = N
 
 
 @router.post("/evolution")
-async def evolution_webhook(request: Request):
+async def evolution_webhook(request: Request, background_tasks: BackgroundTasks):
     """
     Recebe eventos da Evolution API em um endpoint único.
     """
-    return await _handle_evolution_webhook(request)
+    return await _handle_evolution_webhook(request, background_tasks)
 
 
 @router.post("/evolution/{event_slug}")
-async def evolution_webhook_by_event(event_slug: str, request: Request):
+async def evolution_webhook_by_event(event_slug: str, request: Request, background_tasks: BackgroundTasks):
     """
     Recebe eventos da Evolution API quando webhook por evento estiver habilitado.
     """
-    return await _handle_evolution_webhook(request, event_slug)
+    return await _handle_evolution_webhook(request, background_tasks, event_slug)
