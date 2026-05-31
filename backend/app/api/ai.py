@@ -1,10 +1,27 @@
-from fastapi import APIRouter, HTTPException
+import time
+from collections import defaultdict
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from supabase import create_client
 from ..services.ai_service import chat_with_solara
 from ..config import settings
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
+
+# Rate-limit simples em memória para proteger a cota da OpenAI contra abuso.
+# Janela deslizante: no máximo RATE_LIMIT_MAX requisições por IP a cada RATE_LIMIT_WINDOW segundos.
+RATE_LIMIT_MAX = 20
+RATE_LIMIT_WINDOW = 60
+_rate_hits: dict[str, list[float]] = defaultdict(list)
+
+
+def _check_rate_limit(client_ip: str) -> None:
+    now = time.time()
+    hits = [t for t in _rate_hits[client_ip] if now - t < RATE_LIMIT_WINDOW]
+    if len(hits) >= RATE_LIMIT_MAX:
+        raise HTTPException(status_code=429, detail="Muitas mensagens em pouco tempo. Aguarde alguns segundos.")
+    hits.append(now)
+    _rate_hits[client_ip] = hits
 
 # Cliente admin (service role) para ler os dados reais da clínica e injetar no cérebro da Solara.
 _supabase_admin = None
@@ -57,10 +74,12 @@ def _load_clinic_context(clinic_id: str | None) -> dict | None:
 
 
 @router.post("/chat")
-async def chat_endpoint(request: ChatRequest):
+async def chat_endpoint(request: ChatRequest, http_request: Request):
     """
     Endpoint para interagir com a Solara IA (gestora de atendimento).
     """
+    client_ip = (http_request.client.host if http_request.client else "unknown")
+    _check_rate_limit(client_ip)
     try:
         history = [message.model_dump() for message in request.chat_history] if request.chat_history else None
         clinic_context = _load_clinic_context(request.clinic_id)

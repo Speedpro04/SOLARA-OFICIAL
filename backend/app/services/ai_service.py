@@ -151,11 +151,15 @@ async def chat_with_solara(user_message: str, chat_history: list = None, clinic_
     messages.extend(_normalize_chat_history(chat_history))
     messages.append({"role": "user", "content": user_message.strip()})
 
+    # reasoning_effort="low": resposta rápida o suficiente para chat em tempo real,
+    # economizando tokens de raciocínio sem perder a qualidade do atendimento.
+    # Enviado via extra_body para funcionar independentemente da versão do SDK.
     response = await client.chat.completions.create(
         model=settings.MODEL_LLM,
         messages=messages,
         temperature=0.4,
-        max_tokens=1024
+        max_tokens=1024,
+        extra_body={"reasoning_effort": "low"},
     )
 
     return response.choices[0].message.content

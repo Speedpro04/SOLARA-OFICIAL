@@ -201,27 +201,6 @@ async def create_checkout_session(payload: CheckoutSessionRequest, request: Requ
     except InvalidRequestError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/create-payment-intent")
-async def create_payment_intent(
-    amount: int,  # em centavos (ex: 15000 = R$ 150,00)
-    currency: str = "brl",
-    clinic_id: str = None
-):
-    """
-    Criar PaymentIntent para pagamento único
-    Com split de pagamento (Stripe Connect)
-    """
-    try:
-        payment_intent = stripe.PaymentIntent.create(
-            amount=amount,
-            currency=currency,
-            application_fee_amount=int(amount * 0.10),  # 10% para Axos
-            transfer_data={"destination": clinic_id} if clinic_id else None,
-        )
-        return {"client_secret": payment_intent.client_secret}
-    except InvalidRequestError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
 @router.get("/prices")
 async def get_prices():
     """

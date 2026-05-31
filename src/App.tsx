@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import Dashboard from './Dashboard';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import LandingPage from './LandingPage';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
-import CheckoutPage from './CheckoutPage';
+// Telas pós-autenticação carregadas sob demanda (reduz o bundle inicial).
+const Dashboard = lazy(() => import('./Dashboard'));
+const CheckoutPage = lazy(() => import('./CheckoutPage'));
 import { logoutUser, getCurrentSession, hasActiveSubscription } from './lib/auth';
 import { supabase } from './lib/supabase';
 import './index.css';
@@ -15,6 +16,25 @@ interface SelectedPlan {
   price: string;
   slug: string;
   priceId: string;
+}
+
+function LazyFallback({ label }: { label: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '100vh', backgroundColor: '#0a0822', fontFamily: "'Outfit', sans-serif"
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{
+          width: 48, height: 48, border: '3px solid rgba(126, 214, 223, 0.2)',
+          borderTop: '3px solid #7ed6df', borderRadius: '50%',
+          animation: 'spin 1s linear infinite', margin: '0 auto 20px'
+        }} />
+        <p style={{ color: '#7ed6df', fontWeight: 600, fontSize: '1rem' }}>{label}</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    </div>
+  );
 }
 
 function App() {
@@ -201,21 +221,25 @@ function App() {
 
       {/* ======= CHECKOUT ======= */}
       {view === 'checkout' && (
-        <CheckoutPage 
-          planName={selectedPlan.name}
-          planPrice={selectedPlan.price}
-          priceId={selectedPlan.priceId}
-          clinicId={clinicId}
-          userEmail={userEmail}
-          onBack={() => setView('register')}
-          onPaymentSuccess={handlePaymentSuccess}
-          onDevPass={handlePaymentSuccess}
-        />
+        <Suspense fallback={<LazyFallback label="Abrindo checkout..." />}>
+          <CheckoutPage
+            planName={selectedPlan.name}
+            planPrice={selectedPlan.price}
+            priceId={selectedPlan.priceId}
+            clinicId={clinicId}
+            userEmail={userEmail}
+            onBack={() => setView('register')}
+            onPaymentSuccess={handlePaymentSuccess}
+            onDevPass={handlePaymentSuccess}
+          />
+        </Suspense>
       )}
 
       {/* ======= DASHBOARD ======= */}
       {view === 'dashboard' && (
-        <Dashboard onLogout={handleLogout} clinicId={clinicId} />
+        <Suspense fallback={<LazyFallback label="Carregando seu painel..." />}>
+          <Dashboard onLogout={handleLogout} clinicId={clinicId} />
+        </Suspense>
       )}
     </div>
   );
