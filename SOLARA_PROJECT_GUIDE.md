@@ -136,3 +136,29 @@ uvicorn app.main:app --reload   # http://localhost:8000
 
 **`backend/app/.env`:** `OPENAI_API_KEY`, `OPENAI_MODEL`, `STRIPE_SECRET_KEY`,
 `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `EVOLUTION_API_*`
+
+---
+
+## 9. Deploy — EasyPanel (Produção)
+
+O deploy é feito via **EasyPanel**. Ao publicar, atualizar as variáveis de ambiente lá.
+
+### Backend (serviço Python) — ADICIONAR
+```
+OPENAI_API_KEY=sk-proj-...
+OPENAI_MODEL=gpt-5-mini
+OPENAI_BASE_URL=https://api.openai.com/v1
+```
+**REMOVER (NVIDIA antiga):** `VITE_AI_API_KEY`, `VITE_AI_BASE_URL`, `VITE_AI_MODEL`
+
+### Frontend (build Vite) — ADICIONAR
+```
+VITE_STRIPE_LINK_BASICO=https://buy.stripe.com/8x28wO2QC0IQa2ecv89IQ04
+VITE_STRIPE_LINK_CRESCIMENTO=https://buy.stripe.com/cNibJ03UGdvCb6i1Qu9IQ00
+VITE_STRIPE_LINK_AVANCADO=https://buy.stripe.com/8x2eVcfDo1MU1vI2Uy9IQ01
+VITE_STRIPE_LINK_ENTERPRISE=https://buy.stripe.com/9B628q4YKgHO0rE7aO9IQ02
+```
+**REMOVER (price IDs antigos):** `VITE_STRIPE_PRICE_BASICO/CRESCIMENTO/AVANCADO/ENTERPRISE`
+
+> Após atualizar as variáveis, fazer **rebuild** do serviço no EasyPanel
+> (o Vite injeta as `VITE_*` em build time, não em runtime).
