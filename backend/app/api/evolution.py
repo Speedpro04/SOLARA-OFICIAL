@@ -38,7 +38,8 @@ def _extract_instance_name(payload: dict[str, Any]) -> str | None:
 def _extract_event_name(payload: dict[str, Any], event_slug: str | None) -> str:
     event_name = payload.get("event")
     if isinstance(event_name, str) and event_name:
-        return event_name
+        # A Evolution v2 envia "messages.upsert"; normalizamos para MESSAGES_UPSERT.
+        return event_name.upper().replace(".", "_").replace("-", "_")
     if event_slug:
         return event_slug.replace("-", "_").upper()
     return "UNKNOWN"
