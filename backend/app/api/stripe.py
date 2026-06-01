@@ -6,9 +6,14 @@ from urllib.parse import urlparse
 from datetime import datetime, timezone
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel, HttpUrl
-from stripe.error import SignatureVerificationError, InvalidRequestError
 from supabase import create_client
 import stripe
+# Compatibilidade: a partir do stripe-python v8+ os erros saíram de stripe.error
+# e passaram para o nível superior do pacote (stripe.SignatureVerificationError).
+try:
+    from stripe.error import SignatureVerificationError, InvalidRequestError
+except ImportError:
+    from stripe import SignatureVerificationError, InvalidRequestError
 import os
 from app.config import settings
 
