@@ -710,7 +710,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
 
           <div style={{ textAlign: 'center', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '30px', width: '100%' }}>
             <div style={{ fontSize: '1rem', color: '#888', fontWeight: '400' }}>
-              Desenvolvido pela <a href="https://axoshub.com" target="_blank" rel="noopener noreferrer" style={{ color: colors.primary, fontWeight: '800', letterSpacing: '0.02em', textDecoration: 'none' }}>AxosHub</a> — arquitetura digital
+              Sistema desenvolvido pela empresa digital <a href="https://axoshub.com" target="_blank" rel="noopener noreferrer" style={{ color: colors.primary, fontWeight: '800', letterSpacing: '0.02em', textDecoration: 'none' }}>Axos Hub</a>
             </div>
           </div>
 
