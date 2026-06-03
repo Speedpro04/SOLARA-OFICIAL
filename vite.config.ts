@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000
+    // Respeita a porta atribuída pelo ambiente (ex.: harness de preview); 3000 como padrão local.
+    port: Number(process.env.PORT) || 3000
   }
 })
 

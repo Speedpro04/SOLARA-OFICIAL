@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ShieldCheck, Clock, ArrowRight, Stethoscope, Building, CheckCircle2, MessageSquare, Calendar, ChevronUp, Mic } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShieldCheck, Clock, ArrowRight, Stethoscope, Building, CheckCircle2, MessageSquare, Calendar, ChevronUp, Mic, Menu, X } from 'lucide-react';
 import Logo from './Logo';
 
 interface LandingPageProps {
@@ -8,8 +8,39 @@ interface LandingPageProps {
   onNavigateToRegister: (planName: string, planPrice: string, planSlug: string, priceId: string) => void;
 }
 
+// Hook de responsividade: observa a largura da viewport e devolve breakpoints.
+const useViewport = () => {
+  const getWidth = () => (typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [width, setWidth] = React.useState(getWidth);
+  React.useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return { width, isMobile: width <= 768, isTablet: width <= 1024 };
+};
+
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigateToRegister }) => {
   const [showScrollTop, setShowScrollTop] = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const { isMobile, isTablet } = useViewport();
+
+  const navItems = [
+    { label: 'Soluções', target: 'solucoes' },
+    { label: 'Especialistas', target: 'experiencia' },
+    { label: 'Planos', target: 'planos' },
+    { label: 'FAQ', target: 'faq' }
+  ];
+
+  // Fecha o menu mobile ao voltar para desktop e trava o scroll do body quando aberto.
+  React.useEffect(() => {
+    if (!isMobile && menuOpen) setMenuOpen(false);
+  }, [isMobile, menuOpen]);
+
+  React.useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -102,8 +133,77 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
     );
   };
 
+  // Item de FAQ com acordeão acessível.
+  const FaqItem: React.FC<{ q: string; a: string }> = ({ q, a }) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <div style={{ border: `1px solid ${colors.cardBorder}50`, borderRadius: 2, background: colors.bg, overflow: 'hidden' }}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          style={{
+            width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
+            padding: isMobile ? '20px' : '24px 28px', background: 'transparent', border: 'none', cursor: 'pointer',
+            textAlign: 'left', fontFamily: 'inherit'
+          }}
+        >
+          <span style={{ fontSize: isMobile ? '1.05rem' : '1.15rem', fontWeight: 700, color: colors.primary }}>{q}</span>
+          <ChevronUp size={22} color={colors.btnSuccess} style={{ flexShrink: 0, transition: 'transform 0.3s ease', transform: open ? 'rotate(0deg)' : 'rotate(180deg)' }} />
+        </button>
+        <motion.div
+          initial={false}
+          animate={{ height: open ? 'auto' : 0, opacity: open ? 1 : 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          style={{ overflow: 'hidden' }}
+        >
+          <p style={{ padding: isMobile ? '0 20px 20px' : '0 28px 24px', color: '#666', fontSize: '1rem', lineHeight: 1.6 }}>{a}</p>
+        </motion.div>
+      </div>
+    );
+  };
+
+  // Perguntas frequentes — também alimentam o structured data (FAQPage) para SEO.
+  const faqs = [
+    {
+      q: 'O que é o Solara Connect?',
+      a: 'O Solara Connect é um CRM em nuvem para clínicas e consultórios, com automação de WhatsApp, agendamento online 24/7, prontuário eletrônico e gestão de recepção em Kanban. Tudo em uma única plataforma.'
+    },
+    {
+      q: 'Como o Solara Connect reduz as faltas em consultas?',
+      a: 'A plataforma envia lembretes e confirmações automáticas pelo WhatsApp antes de cada consulta. Esse fluxo de confirmação reduz as faltas (no-show) em até 40%, otimizando a agenda dos seus especialistas.'
+    },
+    {
+      q: 'Preciso instalar algum programa?',
+      a: 'Não. O Solara Connect é 100% em nuvem e funciona direto no navegador, no computador ou no celular. Basta acessar com seu login para usar todos os recursos.'
+    },
+    {
+      q: 'A automação de WhatsApp tem custo extra?',
+      a: 'Para clínicas de rotina padrão (até 50 lembretes por dia), a integração é imediata via QR Code e sem custos adicionais. Para alto volume de campanhas (acima de 50 disparos/dia), integramos com a API Oficial da Meta, aplicando-se as taxas de consumo da Meta.'
+    },
+    {
+      q: 'Os dados dos pacientes ficam seguros?',
+      a: 'Sim. Os dados são criptografados de ponta a ponta, com hospedagem em servidores certificados (ISO 27001 / HIPAA Ready) e total conformidade com a LGPD (Lei 13.709/18), incluindo logs de auditoria de cada acesso.'
+    },
+    {
+      q: 'Existe período de fidelidade ou contrato longo?',
+      a: 'Os planos são mensais e sob medida conforme o tamanho do seu corpo clínico. Você pode começar pelo plano ideal e escalar quando precisar, sem burocracia.'
+    }
+  ];
+
+  // JSON-LD para rich results no Google (FAQ + organização/produto).
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a }
+    }))
+  };
+
   return (
     <div style={{ backgroundColor: colors.bg, color: colors.primary, minHeight: '100vh', fontFamily: "'Outfit', sans-serif", overflowX: 'hidden' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       
       {/* Navigation */}
       <nav style={{ 
@@ -121,42 +221,118 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
         <div style={{ ...containerStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px' }}>
           <Logo size={38} textColor={colors.primary} />
           
-          <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: 32, marginRight: 16 }}>
-              {[
-                { label: 'Soluções', target: 'solucoes' },
-                { label: 'Especialistas', target: 'experiencia' },
-                { label: 'Planos', target: 'planos' }
-              ].map((item) => (
-                <NavLink key={item.label} label={item.label} target={item.target} color={colors.primary} hoverColor={colors.btnSuccess} />
-              ))}
-            </div>
-            
-            <motion.button 
-              onClick={onNavigateToLogin}
-              whileHover={{ scale: 1.02, boxShadow: `0 10px 30px ${colors.primary}20` }}
-              whileTap={{ scale: 0.98 }}
-              style={{ 
-                backgroundColor: colors.primary, 
-                color: '#fff', 
-                border: 'none', 
-                padding: '12px 24px', 
-                borderRadius: 2, 
-                fontWeight: '700', 
-                cursor: 'pointer', 
-                fontSize: '0.95rem',
-                letterSpacing: '0.02em',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              Acesso Restrito
-            </motion.button>
+          <div style={{ display: 'flex', gap: isMobile ? 12 : 32, alignItems: 'center' }}>
+            {!isMobile && (
+              <>
+                <div style={{ display: 'flex', gap: 32, marginRight: 16 }}>
+                  {navItems.map((item) => (
+                    <NavLink key={item.label} label={item.label} target={item.target} color={colors.primary} hoverColor={colors.btnSuccess} />
+                  ))}
+                </div>
+
+                <motion.button
+                  onClick={onNavigateToLogin}
+                  whileHover={{ scale: 1.02, boxShadow: `0 10px 30px ${colors.primary}20` }}
+                  whileTap={{ scale: 0.98 }}
+                  style={{
+                    backgroundColor: colors.primary,
+                    color: '#fff',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: 2,
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    fontSize: '0.95rem',
+                    letterSpacing: '0.02em',
+                    transition: 'all 0.3s ease',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Acesso Restrito
+                </motion.button>
+              </>
+            )}
+
+            {isMobile && (
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+                aria-expanded={menuOpen}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${colors.cardBorder}`,
+                  borderRadius: 2,
+                  padding: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: colors.primary,
+                  zIndex: 110
+                }}
+              >
+                {menuOpen ? <X size={26} /> : <Menu size={26} />}
+              </button>
+            )}
           </div>
         </div>
       </nav>
 
+      {/* Mobile Menu Drawer */}
+      <AnimatePresence>
+        {isMobile && menuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMenuOpen(false)}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(19, 15, 64, 0.45)', backdropFilter: 'blur(2px)', zIndex: 90 }}
+            />
+            {/* Painel lateral */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 95,
+                width: 'min(80vw, 320px)', background: colors.bg,
+                boxShadow: `-20px 0 60px ${colors.primary}20`,
+                padding: '88px 24px 32px', display: 'flex', flexDirection: 'column', gap: 8
+              }}
+            >
+              {navItems.map((item) => (
+                <a
+                  key={item.label}
+                  href={`#${item.target}`}
+                  onClick={() => setMenuOpen(false)}
+                  style={{
+                    color: colors.primary, textDecoration: 'none', fontWeight: 600, fontSize: '1.1rem',
+                    padding: '16px 12px', borderRadius: 2, borderBottom: `1px solid ${colors.cardBorder}30`
+                  }}
+                >
+                  {item.label}
+                </a>
+              ))}
+              <button
+                onClick={() => { setMenuOpen(false); onNavigateToLogin(); }}
+                style={{
+                  marginTop: 16, backgroundColor: colors.primary, color: '#fff', border: 'none',
+                  padding: '16px 24px', borderRadius: 2, fontWeight: 700, cursor: 'pointer',
+                  fontSize: '1rem', letterSpacing: '0.02em', width: '100%'
+                }}
+              >
+                Acesso Restrito
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Hero Section */}
-      <header style={{ paddingTop: '180px', paddingBottom: '120px', position: 'relative' }}>
+      <header style={{ paddingTop: isMobile ? '120px' : '180px', paddingBottom: isMobile ? '70px' : '120px', position: 'relative' }}>
         <div style={{ position: 'absolute', top: '-10%', right: '10%', width: 600, height: 600, background: colors.cardBorder, filter: 'blur(200px)', opacity: 0.15, zIndex: 0, borderRadius: '50%' }} />
         <div style={{ position: 'absolute', top: '20%', left: '5%', width: 500, height: 500, background: colors.btnSuccess, filter: 'blur(150px)', opacity: 0.1, zIndex: 0, borderRadius: '50%' }} />
 
@@ -167,7 +343,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
               Software para Gestão de Clínicas e Consultórios
             </motion.div>
             
-            <motion.h1 variants={fadeInUp} style={{ fontSize: '46px', fontWeight: '800', lineHeight: '1.1', marginBottom: 32, letterSpacing: '-0.04em', color: colors.primary }}>
+            <motion.h1 variants={fadeInUp} style={{ fontSize: 'clamp(2rem, 7vw, 46px)', fontWeight: '800', lineHeight: '1.1', marginBottom: 32, letterSpacing: '-0.04em', color: colors.primary }}>
               Solara Connect: <br/>
               <span style={{ position: 'relative', color: colors.primary }}>
                 Automação Via WhatsApp.
@@ -181,20 +357,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
               A solução em nuvem completa. CRM para clínicas com integração WhatsApp, sistema de agendamento online para clientes e chatbot para recepção. Como reduzir faltas em consultas médicas? Com a plataforma de automação de lembretes Solara Connect.
             </motion.p>
             
-            <motion.div variants={fadeInUp} style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
-              <motion.button 
+            <motion.div variants={fadeInUp} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'center', gap: isMobile ? 16 : 24, width: isMobile ? '100%' : 'auto' }}>
+              <motion.button
                 onClick={handleWhatsAppClick}
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                style={{ backgroundColor: colors.btnSuccess, color: colors.primary, border: 'none', padding: '20px 40px', borderRadius: 2, fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, boxShadow: `0 20px 40px ${colors.btnSuccess}40` }}
+                style={{ backgroundColor: colors.btnSuccess, color: colors.primary, border: 'none', padding: isMobile ? '18px 28px' : '20px 40px', borderRadius: 2, fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, boxShadow: `0 20px 40px ${colors.btnSuccess}40`, width: isMobile ? '100%' : 'auto' }}
               >
                 Agendar Demonstração <ArrowRight size={20} />
               </motion.button>
-              <motion.button 
+              <motion.button
                 onClick={() => document.getElementById('solucoes')?.scrollIntoView({ behavior: 'smooth' })}
                 whileHover={{ scale: 1.03, backgroundColor: colors.cardBg }}
                 whileTap={{ scale: 0.97 }}
-                style={{ backgroundColor: 'transparent', color: colors.primary, border: `2px solid ${colors.cardBorder}`, padding: '20px 40px', borderRadius: 2, fontSize: '1.1rem', fontWeight: '600', cursor: 'pointer' }}
+                style={{ backgroundColor: 'transparent', color: colors.primary, border: `2px solid ${colors.cardBorder}`, padding: isMobile ? '18px 28px' : '20px 40px', borderRadius: 2, fontSize: '1.1rem', fontWeight: '600', cursor: 'pointer', width: isMobile ? '100%' : 'auto' }}
               >
                 Ver Soluções
               </motion.button>
@@ -228,23 +404,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
       <section style={{ borderTop: `1px solid ${colors.cardBorder}30`, borderBottom: `1px solid ${colors.cardBorder}30`, background: colors.cardBg }}>
         <div style={{ ...containerStyle, padding: '60px 20px', textAlign: 'center' }}>
           <p style={{ color: '#666', fontSize: '0.9rem', fontWeight: '600', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 40 }}>Aprovado por Clínicas e Hospitais de Referência</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.6, filter: 'grayscale(100%)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: isMobile ? '16px 24px' : 32, alignItems: 'center', opacity: 0.6, filter: 'grayscale(100%)' }}>
             {['ODONTOLOGIA', 'ESTÉTICA', 'DERMATOLOGIA', 'FISIOTERAPIA', 'PEDIATRIA'].map((brand, i) => (
-              <h3 key={i} style={{ fontSize: '1.5rem', fontWeight: '800', color: colors.primary }}>{brand}</h3>
+              <h3 key={i} style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)', fontWeight: '800', color: colors.primary }}>{brand}</h3>
             ))}
           </div>
         </div>
       </section>
 
       {/* Features Detail */}
-      <section id="solucoes" style={{ padding: '120px 0 0 0' }}>
+      <section id="solucoes" style={{ padding: isMobile ? '70px 0 0 0' : '120px 0 0 0' }}>
         <div style={{ ...containerStyle, padding: '0 20px' }}>
           <div style={{ textAlign: 'center', marginBottom: 80, maxWidth: 800, margin: '0 auto 80px' }}>
-            <h2 style={{ fontSize: '3.5rem', fontWeight: '800', marginBottom: 24, color: colors.primary, letterSpacing: '-0.02em' }}>Projetado para sua Clínica</h2>
+            <h2 style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)', fontWeight: '800', marginBottom: 24, color: colors.primary, letterSpacing: '-0.02em' }}>Projetado para sua Clínica</h2>
             <p style={{ fontSize: '1.2rem', color: '#666', lineHeight: '1.6' }}>O Solara Connect elimina a burocracia, permitindo que seus especialistas foquem no que importa: o resultado do cliente.</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 32 }}>
             {[
               { icon: <Clock />, title: "Fila Zero", desc: "Triagem e admissão automatizadas. O cliente aguarda menos de 5 minutos na recepção." },
               { icon: <Calendar />, title: "Agendamento 24/7", desc: "Sua clínica nunca fecha. Link de agendamento inteligente para seus clientes marcarem consultas a qualquer hora." },
@@ -274,9 +450,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
       </section>
 
       {/* LGPD Compliance Section */}
-      <section style={{ padding: '100px 0', background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)', color: '#fff', overflow: 'hidden', position: 'relative' }}>
+      <section style={{ padding: isMobile ? '70px 0' : '100px 0', background: 'linear-gradient(135deg, #130f40 0%, #2c3e50 100%)', color: '#fff', overflow: 'hidden', position: 'relative' }}>
         <div style={{ position: 'absolute', top: -100, left: -100, width: 400, height: 400, background: colors.btnSuccess, filter: 'blur(200px)', opacity: 0.1, borderRadius: '50%' }} />
-        <div style={{ ...containerStyle, padding: '0 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+        <div style={{ ...containerStyle, padding: '0 20px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 48 : 80, alignItems: 'center' }}>
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -285,7 +461,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 16px', background: 'rgba(51, 217, 178, 0.1)', border: '1px solid rgba(51, 217, 178, 0.3)', borderRadius: 2, color: colors.btnSuccess, fontSize: '0.85rem', fontWeight: '700', marginBottom: 32, textTransform: 'uppercase' }}>
               <ShieldCheck size={18} /> Segurança de Dados Enterprise
             </div>
-            <h2 style={{ fontSize: '3.5rem', fontWeight: '800', marginBottom: 24, lineHeight: '1.1', letterSpacing: '-0.02em' }}>Sua Clínica 100% aderente à LGPD.</h2>
+            <h2 style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)', fontWeight: '800', marginBottom: 24, lineHeight: '1.1', letterSpacing: '-0.02em' }}>Sua Clínica 100% aderente à LGPD.</h2>
             <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6', marginBottom: 40 }}>
               A Solara Connect foi construída sob os pilares da Lei Geral de Proteção de Dados (Lei 13.709/18). 
               Garantimos que cada dado de saúde, prontuário e informação pessoal seja tratado com o mais alto nível de criptografia e governança.
@@ -330,16 +506,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
       </section>
 
       {/* System Experience Showcase */}
-      <section id="experiencia" style={{ padding: '120px 0', backgroundColor: colors.bg }}>
+      <section id="experiencia" style={{ padding: isMobile ? '70px 0' : '120px 0', backgroundColor: colors.bg }}>
         <div style={{ ...containerStyle, padding: '0 20px' }}>
           <div style={{ textAlign: 'center', marginBottom: 80 }}>
-            <h2 style={{ fontSize: '3.5rem', fontWeight: '800', marginBottom: 24, color: colors.primary, letterSpacing: '-0.02em' }}>A Potência do Solara Connect</h2>
+            <h2 style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)', fontWeight: '800', marginBottom: 24, color: colors.primary, letterSpacing: '-0.02em' }}>A Potência do Solara Connect</h2>
             <p style={{ fontSize: '1.2rem', color: '#666', maxWidth: 850, margin: '0 auto', lineHeight: '1.6' }}>
               Interface intuitiva projetada para máxima produtividade clínica. Reduza faltas e automatize o WhatsApp do seu consultório em poucos cliques.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '48px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: isMobile ? '28px' : '48px' }}>
             {[
               { img: '/recepcao.png', title: 'Recepção Inteligente', desc: 'Controle de fila e salas em tempo real.' },
               { img: '/agenda.png', title: 'Login e Cadastro', desc: 'Acesso rápido e seguro ao portal Solara.' },
@@ -351,7 +527,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
                 whileHover={{ y: -10 }}
                 style={{ background: '#fff', borderRadius: 2, overflow: 'hidden', border: `1px solid ${colors.cardBorder}40`, boxShadow: '0 20px 50px rgba(0,0,0,0.05)' }}
               >
-                <div style={{ width: '100%', height: '350px', overflow: 'hidden', backgroundColor: '#f9f9f9' }}>
+                <div style={{ width: '100%', height: isMobile ? '220px' : '350px', overflow: 'hidden', backgroundColor: '#f9f9f9' }}>
                   <img src={item.img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ padding: '40px', textAlign: 'center' }}>
@@ -367,10 +543,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             style={{ 
-              marginTop: '40px', 
-              marginBottom: '40px', 
-              padding: '0 100px', 
-              textAlign: 'center' 
+              marginTop: '40px',
+              marginBottom: '40px',
+              padding: isMobile ? '0 4px' : '0 100px',
+              textAlign: 'center'
             }}
           >
             <p style={{ fontSize: '1.15rem', color: '#555', lineHeight: '1.6', fontWeight: '400' }}>
@@ -382,7 +558,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
 
 
       {/* Solara Voice - Voice Command Section (Motion Graphics) */}
-      <section style={{ padding: '120px 0', background: colors.primary, position: 'relative', overflow: 'hidden' }}>
+      <section style={{ padding: isMobile ? '70px 0' : '120px 0', background: colors.primary, position: 'relative', overflow: 'hidden' }}>
         {/* Ambient background blurs */}
         <motion.div animate={{ x: [0, 30, 0], y: [0, -20, 0] }} transition={{ repeat: Infinity, duration: 8, ease: 'easeInOut' }} style={{ position: 'absolute', top: -150, left: -150, width: 500, height: 500, background: colors.btnSuccess, filter: 'blur(250px)', opacity: 0.12, borderRadius: '50%' }} />
         <motion.div animate={{ x: [0, -20, 0], y: [0, 30, 0] }} transition={{ repeat: Infinity, duration: 10, ease: 'easeInOut' }} style={{ position: 'absolute', bottom: -100, right: -100, width: 400, height: 400, background: colors.cardBorder, filter: 'blur(200px)', opacity: 0.08, borderRadius: '50%' }} />
@@ -410,7 +586,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
         ))}
 
         <div style={{ ...containerStyle, padding: '0 20px', position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 48 : 80, alignItems: 'center' }}>
             
             {/* Left: Content with staggered animations */}
             <motion.div
@@ -437,7 +613,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35, duration: 0.7 }}
                 viewport={{ once: true }}
-                style={{ fontSize: '3.2rem', fontWeight: 800, color: '#fff', lineHeight: 1.15, marginBottom: 24, letterSpacing: '-0.02em' }}
+                style={{ fontSize: 'clamp(2rem, 6vw, 3.2rem)', fontWeight: 800, color: '#fff', lineHeight: 1.15, marginBottom: 24, letterSpacing: '-0.02em' }}
               >
                 Comande sua <br />
                 <span style={{ color: colors.btnSuccess }}>operação por voz.</span>
@@ -577,14 +753,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
 
 
       {/* Pricing Section */}
-      <section id="planos" style={{ padding: '120px 0', background: colors.cardBg, borderTop: `1px solid ${colors.cardBorder}30`, borderBottom: `1px solid ${colors.cardBorder}30`, marginBottom: '120px' }}>
+      <section id="planos" style={{ padding: isMobile ? '70px 0' : '120px 0', background: colors.cardBg, borderTop: `1px solid ${colors.cardBorder}30`, borderBottom: `1px solid ${colors.cardBorder}30`, marginBottom: isMobile ? '70px' : '120px' }}>
         <div style={{ ...containerStyle, padding: '0 20px' }}>
           <div style={{ textAlign: 'center', marginBottom: 80, maxWidth: 800, margin: '0 auto 80px' }}>
-            <h2 style={{ fontSize: '3.5rem', fontWeight: '800', marginBottom: 24, color: colors.primary, letterSpacing: '-0.02em' }}>Planos Sob Medida</h2>
+            <h2 style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)', fontWeight: '800', marginBottom: 24, color: colors.primary, letterSpacing: '-0.02em' }}>Planos Sob Medida</h2>
             <p style={{ fontSize: '1.2rem', color: '#666', lineHeight: '1.6' }}>Escolha o plano ideal com base no tamanho do seu corpo clínico. Todos os planos incluem acesso completo ao sistema.</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 24 }}>
             {[
               { title: "Básico", slug: "basico", esp: "Até 2 especialistas", price: "197", color: colors.btnSuccess, priceId: import.meta.env.VITE_STRIPE_PRICE_BASICO },
               { title: "Crescimento", slug: "crescimento", esp: "3 a 5 especialistas", price: "397", color: colors.cardBorder, priceId: import.meta.env.VITE_STRIPE_PRICE_CRESCIMENTO },
@@ -627,7 +803,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
                 
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 32, color: colors.primary }}>
                   <span style={{ fontSize: '1.2rem', fontWeight: '700' }}>R$</span>
-                  <span style={{ fontSize: '3.5rem', fontWeight: '800', letterSpacing: '-0.05em' }}>{plan.price}</span>
+                  <span style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)', fontWeight: '800', letterSpacing: '-0.05em' }}>{plan.price}</span>
                   <span style={{ fontSize: '1rem', color: '#888', fontWeight: '500' }}>/mês</span>
                 </div>
                 
@@ -661,18 +837,37 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section id="faq" style={{ padding: isMobile ? '0 0 70px' : '0 0 120px', background: colors.bg }}>
+        <div style={{ ...containerStyle, padding: '0 20px', maxWidth: 860 }}>
+          <div style={{ textAlign: 'center', marginBottom: isMobile ? 40 : 64 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 16px', background: colors.cardBg, border: `1px solid ${colors.cardBorder}80`, borderRadius: 2, color: colors.primary, fontSize: '0.85rem', fontWeight: 700, marginBottom: 24, textTransform: 'uppercase' }}>
+              <MessageSquare size={16} color={colors.btnSuccess} /> Tire suas dúvidas
+            </div>
+            <h2 style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)', fontWeight: 800, marginBottom: 16, color: colors.primary, letterSpacing: '-0.02em' }}>Perguntas Frequentes</h2>
+            <p style={{ fontSize: '1.15rem', color: '#666', lineHeight: 1.6 }}>Tudo o que você precisa saber sobre o Solara Connect antes de começar.</p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {faqs.map((f, i) => (
+              <FaqItem key={i} q={f.q} a={f.a} />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
-      <section style={{ padding: '0 0 120px' }}>
+      <section style={{ padding: isMobile ? '0 0 70px' : '0 0 120px' }}>
         <div style={{ ...containerStyle, padding: '0 20px' }}>
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            style={{ background: colors.primary, padding: '80px 60px', borderRadius: 2, textAlign: 'center', position: 'relative', overflow: 'hidden' }}
+            style={{ background: colors.primary, padding: isMobile ? '48px 24px' : '80px 60px', borderRadius: 2, textAlign: 'center', position: 'relative', overflow: 'hidden' }}
           >
             <div style={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: colors.btnSuccess, filter: 'blur(200px)', opacity: 0.2, borderRadius: '50%' }} />
             
-            <h2 style={{ fontSize: '3.5rem', fontWeight: '800', color: colors.bg, marginBottom: 24, letterSpacing: '-0.02em' }}>Eleve sua Clínica.</h2>
+            <h2 style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)', fontWeight: '800', color: colors.bg, marginBottom: 24, letterSpacing: '-0.02em' }}>Eleve sua Clínica.</h2>
             <p style={{ fontSize: '1.2rem', color: `${colors.bg}80`, maxWidth: 600, margin: '0 auto 48px', lineHeight: '1.6' }}>
               Agende uma demonstração exclusiva com nossos especialistas e descubra como o Solara Connect pode transformar sua operação.
             </p>
@@ -691,8 +886,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
       <footer style={{ borderTop: `1px solid ${colors.cardBorder}40`, background: colors.cardBg, color: '#666', fontWeight: '500', padding: '60px 0' }}>
         <div style={{ ...containerStyle, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 40, alignItems: 'center' }}>
           
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ width: '100%', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 24 : 0, justifyContent: 'space-between', alignItems: isMobile ? 'center' : 'flex-start', textAlign: isMobile ? 'center' : 'left' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: isMobile ? 'center' : 'flex-start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <Logo size={24} showText={false} />
                 <span style={{ fontWeight: '700', color: colors.primary }}>Solara Connect © 2026</span>
@@ -702,7 +897,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 32 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: isMobile ? 16 : 32 }}>
               <a href="#" style={{ color: '#666', textDecoration: 'none', fontSize: '0.9rem' }}>Termos de Uso</a>
               <a href="#" style={{ color: '#666', textDecoration: 'none', fontSize: '0.9rem' }}>Política de Privacidade (LGPD)</a>
             </div>

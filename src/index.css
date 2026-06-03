@@ -273,6 +273,85 @@ button.ghost:hover {
   scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
 }
 
+/* ============================================
+   RESPONSIVIDADE — Dashboard / layout principal
+   ============================================ */
+
+/* Tablet: sidebar mais estreita */
+@media (max-width: 1024px) {
+  .app-grid {
+    grid-template-columns: 220px 1fr;
+  }
+  .main {
+    padding: 28px;
+  }
+}
+
+/* Mobile: sidebar vira barra horizontal no topo, conteúdo empilha */
+@media (max-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+  .app-grid {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    overflow-x: auto;
+  }
+  .nav {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    flex: 1 1 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nav-item {
+    white-space: nowrap;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+  .nav-item:hover {
+    transform: none;
+  }
+  .sidebar-footer {
+    flex-direction: row;
+    align-items: center;
+    border-top: none;
+    padding-top: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .main {
+    padding: 20px 16px;
+  }
+  .topbar {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .topbar h1 {
+    font-size: 1.4rem;
+  }
+}
+
+/* Telas muito pequenas */
+@media (max-width: 480px) {
+  .main {
+    padding: 16px 12px;
+  }
+  .panel {
+    padding: 16px;
+  }
+}
+
 /* Solara Voice - Mic Pulse Animation */
 @keyframes pulse {
   0% {
