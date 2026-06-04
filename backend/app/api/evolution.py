@@ -1,10 +1,18 @@
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 import httpx
+import asyncio
+import re
 from ..config import settings
 from ..services.supabase_service import supabase_client
 from ..services.ai_service import chat_with_solara
 import logging
 from typing import Any
+
+# Quebra a resposta da Solara em "balões" de WhatsApp para uma conversa mais humana.
+_MAX_BUBBLES = 4            # nunca enviar mais que isso de uma vez (evita spam)
+_TYPING_MS_PER_CHAR = 35    # tempo de "digitando..." proporcional ao tamanho do balão
+_TYPING_MIN_MS = 700        # mínimo de "digitando..." por balão
+_TYPING_MAX_MS = 2800       # máximo de "digitando..." por balão
 
 router = APIRouter(prefix="/api/webhooks", tags=["webhooks"])
 
@@ -220,13 +228,48 @@ def _persist_message(clinic_id: str | None, patient_id: str | None, content: str
         logging.warning("Webhook recebido, mas falhou ao persistir mensagem no Supabase: %s", exc)
 
 
-async def _send_whatsapp_reply(instance_name: str | None, phone: str | None, text: str) -> bool:
-    """Envia a resposta da Solara de volta pelo WhatsApp via Evolution API."""
+def _split_into_bubbles(text: str) -> list[str]:
+    """Divide a resposta da Solara em balões separados, como uma conversa real de WhatsApp.
+
+    A Solara separa mensagens distintas por linha em branco (parágrafos). Cada parágrafo
+    vira um balão. Listas/bullets dentro de um mesmo parágrafo (quebra simples) ficam juntos.
+    """
+    if not text:
+        return []
+    # Normaliza quebras e separa por linha(s) em branco.
+    parts = re.split(r"\n\s*\n", text.strip())
+    bubbles = [p.strip() for p in parts if p.strip()]
+
+    # Se a Solara não usou linha em branco, mantém um único balão (não força quebra artificial).
+    if len(bubbles) <= 1:
+        return bubbles or ([text.strip()] if text.strip() else [])
+
+    # Limita o número de balões: o excedente é agrupado no último para não virar spam.
+    if len(bubbles) > _MAX_BUBBLES:
+        head = bubbles[: _MAX_BUBBLES - 1]
+        tail = "\n\n".join(bubbles[_MAX_BUBBLES - 1 :])
+        bubbles = head + [tail]
+    return bubbles
+
+
+def _typing_delay_ms(text: str) -> int:
+    """Tempo de 'digitando...' proporcional ao tamanho do balão, dentro de limites humanos."""
+    ms = len(text) * _TYPING_MS_PER_CHAR
+    return max(_TYPING_MIN_MS, min(_TYPING_MAX_MS, ms))
+
+
+async def _send_whatsapp_reply(instance_name: str | None, phone: str | None, text: str, delay_ms: int = 0) -> bool:
+    """Envia um balão de resposta pelo WhatsApp via Evolution API.
+
+    delay_ms aciona o indicador 'digitando...' da Evolution antes de a mensagem aparecer.
+    """
     if not (instance_name and phone and text and settings.EVOLUTION_API_KEY):
         return False
     url = f"{settings.EVOLUTION_API_URL}/message/sendText/{instance_name}"
     headers = {"apikey": settings.EVOLUTION_API_KEY, "Content-Type": "application/json"}
-    payload = {"number": phone, "text": text}
+    payload: dict[str, Any] = {"number": phone, "text": text}
+    if delay_ms > 0:
+        payload["delay"] = delay_ms
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(url, headers=headers, json=payload)
@@ -248,10 +291,17 @@ async def _process_solara_reply(instance_name: str | None, phone: str | None, cl
         reply = await chat_with_solara(content, history, clinic_context)
         if not reply or not reply.strip():
             return
-        reply = reply.strip()
-        # Registra a resposta da Solara como mensagem enviada
-        _persist_message(clinic_id, patient_id, reply, "clinic", {"source": "solara_ai"})
-        await _send_whatsapp_reply(instance_name, phone, reply)
+
+        # Divide a resposta em balões e envia um de cada vez, com efeito de "digitando...".
+        bubbles = _split_into_bubbles(reply)
+        for index, bubble in enumerate(bubbles):
+            delay_ms = _typing_delay_ms(bubble)
+            # Pequena pausa entre balões para o paciente "ler" o anterior (a partir do 2º).
+            if index > 0:
+                await asyncio.sleep(delay_ms / 1000)
+            # Registra cada balão como mensagem enviada (espelha o que o paciente recebe).
+            _persist_message(clinic_id, patient_id, bubble, "clinic", {"source": "solara_ai"})
+            await _send_whatsapp_reply(instance_name, phone, bubble, delay_ms)
     except Exception as exc:
         logging.exception("Falha ao gerar/enviar resposta da Solara: %s", exc)
 
