@@ -85,7 +85,11 @@ async def chat_endpoint(request: ChatRequest, http_request: Request):
     try:
         history = [message.model_dump() for message in request.chat_history] if request.chat_history else None
         clinic_context = _load_clinic_context(request.clinic_id)
-        response_text = await chat_with_solara(request.message, history, clinic_context)
+        # Só se apresenta se ainda não houver nenhuma resposta dela no histórico desta conversa.
+        should_introduce = not any(
+            str((m or {}).get("role", "")).lower() == "assistant" for m in (history or [])
+        )
+        response_text = await chat_with_solara(request.message, history, clinic_context, should_introduce)
         return {
             "status": "success",
             "solara_response": response_text

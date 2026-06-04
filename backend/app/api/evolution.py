@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 import httpx
 import asyncio
 import re
+import datetime
 from ..config import settings
 from ..services.supabase_service import supabase_client
 from ..services.ai_service import chat_with_solara
@@ -18,6 +19,10 @@ router = APIRouter(prefix="/api/webhooks", tags=["webhooks"])
 
 # Conteúdos que não devem disparar resposta automática da Solara.
 _NON_REPLYABLE = {"[audio]", "[mensagem sem texto]"}
+
+# Após este tempo de silêncio, a conversa é tratada como reiniciada e a Solara
+# se apresenta de novo (equivalente a uma ligação que caiu e recomeçou).
+_CONVERSATION_RESET_GAP_SECONDS = 3 * 60 * 60  # 3 horas
 
 
 def _require_webhook_auth(request: Request) -> None:
@@ -210,6 +215,69 @@ def _fetch_conversation_history(patient_id: str | None, exclude_content: str, li
         return []
 
 
+def _parse_timestamp(value: Any) -> datetime.datetime | None:
+    """Converte o created_at do Supabase (ISO 8601) em datetime com timezone."""
+    if not value:
+        return None
+    try:
+        text = str(value).strip()
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        dt = datetime.datetime.fromisoformat(text)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
+    except Exception:
+        return None
+
+
+def _should_introduce(patient_id: str | None) -> bool:
+    """Decide se a Solara deve se apresentar nesta mensagem.
+
+    Apresenta-se quando:
+    - é o primeiro contato deste número (a Solara nunca respondeu antes), ou
+    - a conversa recomeçou após um longo silêncio (como uma ligação que caiu).
+    Caso contrário, NÃO se reapresenta — é a mesma conversa em andamento.
+
+    Observação: a mensagem atual do paciente já foi persistida antes desta checagem,
+    então ela é a mais recente do histórico (rows[0]).
+    """
+    if not patient_id:
+        # Sem paciente cadastrado não dá para rastrear o número; na primeira vez
+        # apresenta-se normalmente (comportamento padrão).
+        return True
+    try:
+        result = (
+            supabase_client.table("messages")
+            .select("sender_type, created_at")
+            .eq("patient_id", patient_id)
+            .order("created_at", desc=True)
+            .limit(30)
+            .execute()
+        )
+    except Exception as exc:
+        logging.warning("Falha ao verificar estado de apresentação da Solara: %s", exc)
+        # Na dúvida, não fica reapresentando (evita o comportamento que incomoda).
+        return False
+
+    rows = result.data or []
+
+    # Se a Solara nunca respondeu este número antes, é o primeiro contato.
+    if not any(r.get("sender_type") == "clinic" for r in rows):
+        return True
+
+    # Conversa reiniciada? Mede o silêncio entre a mensagem atual e a anterior.
+    if len(rows) >= 2:
+        current_ts = _parse_timestamp(rows[0].get("created_at"))
+        previous_ts = _parse_timestamp(rows[1].get("created_at"))
+        if current_ts and previous_ts:
+            gap = (current_ts - previous_ts).total_seconds()
+            if gap >= _CONVERSATION_RESET_GAP_SECONDS:
+                return True
+
+    return False
+
+
 def _persist_message(clinic_id: str | None, patient_id: str | None, content: str, sender_type: str, raw_payload: dict[str, Any]) -> None:
     try:
         payload: dict[str, Any] = {
@@ -288,7 +356,8 @@ async def _process_solara_reply(instance_name: str | None, phone: str | None, cl
         from .ai import _load_clinic_context  # import tardio evita ciclo de importação
         clinic_context = _load_clinic_context(clinic_id) if clinic_id else None
         history = _fetch_conversation_history(patient_id, content)
-        reply = await chat_with_solara(content, history, clinic_context)
+        should_introduce = _should_introduce(patient_id)
+        reply = await chat_with_solara(content, history, clinic_context, should_introduce)
         if not reply or not reply.strip():
             return
 

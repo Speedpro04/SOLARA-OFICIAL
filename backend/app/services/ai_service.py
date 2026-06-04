@@ -109,6 +109,15 @@ NO_CONTEXT_NOTE = """# DADOS DESTA CLÍNICA
 (Ainda não foram carregados os dados cadastrais da clínica nesta conversa.)
 Portanto: não invente informações específicas (preços, horários, endereço, profissionais, convênios). Quando precisar de algum desses dados, pergunte ao paciente ou ofereça encaminhar para a equipe."""
 
+# Instruções de apresentação resolvidas de forma determinística pelo backend.
+# O modelo sozinho não tem como saber com segurança se já se apresentou para este
+# número (ele só vê as últimas mensagens), então quem decide é o código.
+INTRO_NOTE_FIRST = """# APRESENTAÇÃO NESTA MENSAGEM
+Esta é a PRIMEIRA mensagem desta conversa com este paciente (ou a conversa recomeçou após um longo período de silêncio, como uma ligação que caiu e voltou). Apresente-se UMA única vez agora: diga que é a Solara e o nome da clínica, de forma curta e calorosa. Não repita a apresentação nas mensagens seguintes."""
+
+INTRO_NOTE_CONTINUE = """# APRESENTAÇÃO NESTA MENSAGEM
+Você JÁ se apresentou para este paciente nesta conversa. NÃO se apresente de novo: não diga "eu sou a Solara", não repita o nome da clínica como saudação de abertura e não recomece com boas-vindas. Apenas continue a conversa de onde parou, com naturalidade, como quem já está conversando há um tempo."""
+
 
 def _format_clinic_context(ctx: dict | None) -> str:
     """Monta o bloco de contexto real da clínica para injetar no system prompt."""
@@ -173,8 +182,20 @@ def _normalize_chat_history(chat_history: list | None) -> list[dict[str, str]]:
     return normalized_history
 
 
-async def chat_with_solara(user_message: str, chat_history: list = None, clinic_context: dict | None = None) -> str:
-    system_content = SOLARA_SYSTEM_PROMPT + "\n\n" + _format_clinic_context(clinic_context)
+async def chat_with_solara(
+    user_message: str,
+    chat_history: list = None,
+    clinic_context: dict | None = None,
+    should_introduce: bool = True,
+) -> str:
+    intro_note = INTRO_NOTE_FIRST if should_introduce else INTRO_NOTE_CONTINUE
+    system_content = (
+        SOLARA_SYSTEM_PROMPT
+        + "\n\n"
+        + _format_clinic_context(clinic_context)
+        + "\n\n"
+        + intro_note
+    )
 
     messages = [{"role": "system", "content": system_content}]
     messages.extend(_normalize_chat_history(chat_history))
