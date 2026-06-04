@@ -11,9 +11,16 @@ load_dotenv(BASE_DIR / ".env", override=True)
 class Settings:
     # Supabase
     SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-    SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
     SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
     SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    # Chave usada pelo client do backend (servidor confiável). Precisa escrever no
+    # banco (persistir mensagens, criar pacientes) sem esbarrar no RLS, então usa o
+    # service role por padrão. Mantém SUPABASE_KEY como override explícito se definido.
+    SUPABASE_KEY = (
+        os.getenv("SUPABASE_KEY")
+        or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        or os.getenv("SUPABASE_ANON_KEY", "")
+    )
 
     # Database URL (Supabase connection string)
     DATABASE_URL = os.getenv("DATABASE_URL", "")
@@ -58,7 +65,7 @@ class Settings:
     # OpenAI AI (LLM principal)
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-    MODEL_LLM = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+    MODEL_LLM = os.getenv("OPENAI_MODEL", "gpt-5")
 
     # Maintenance / Dev Pass
     ENABLE_DEV_PASS = os.getenv("ENABLE_DEV_PASS", "false").lower() == "true"

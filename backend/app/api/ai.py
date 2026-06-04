@@ -47,6 +47,32 @@ class ChatRequest(BaseModel):
     chat_history: list[ChatMessage] | None = None
 
 
+def _load_clinic_knowledge(clinic_id: str | None) -> list[dict]:
+    """Carrega a base de conhecimento da clínica (serviços, preços, horários, convênios, FAQ).
+
+    Este é o ponto de encaixe do RAG (fase 2): hoje carregamos todas as entradas
+    ativas da clínica e injetamos no contexto. Quando o conhecimento crescer, basta
+    trocar esta consulta por uma busca top-k por similaridade (pgvector), mantendo a
+    mesma assinatura de retorno (lista de {kind, title, content}).
+    """
+    if not clinic_id or not _supabase_admin:
+        return []
+    try:
+        res = (
+            _supabase_admin.table("clinic_knowledge")
+            .select("kind, title, content, priority")
+            .eq("clinic_id", clinic_id)
+            .eq("active", True)
+            .order("priority", desc=True)
+            .limit(200)
+            .execute()
+        )
+        return res.data or []
+    except Exception:
+        # Tabela ainda não criada ou indisponível: segue sem conhecimento extra.
+        return []
+
+
 def _load_clinic_context(clinic_id: str | None) -> dict | None:
     """Busca, de forma defensiva, os dados reais da clínica para o contexto da Solara."""
     if not clinic_id or not _supabase_admin:
@@ -59,15 +85,26 @@ def _load_clinic_context(clinic_id: str | None) -> dict | None:
             return None
         ctx = dict(clinic_res.data[0])
 
+        # Profissionais: tenta filtrar pela clínica; se a coluna não existir no
+        # schema (especialistas globais), cai no fallback de ativos.
         try:
-            # specialists não possui clinic_id no schema atual (são globais);
-            # carrega os profissionais ativos para compor o contexto.
-            sp_res = _supabase_admin.table("specialists").select(
-                "name, specialty"
-            ).eq("active", True).limit(50).execute()
+            sp_query = _supabase_admin.table("specialists").select("name, specialty").eq("active", True)
+            try:
+                sp_res = sp_query.eq("clinic_id", clinic_id).limit(50).execute()
+                if not sp_res.data:
+                    sp_res = _supabase_admin.table("specialists").select(
+                        "name, specialty"
+                    ).eq("active", True).limit(50).execute()
+            except Exception:
+                sp_res = _supabase_admin.table("specialists").select(
+                    "name, specialty"
+                ).eq("active", True).limit(50).execute()
             ctx["specialists"] = sp_res.data or []
         except Exception:
             ctx["specialists"] = []
+
+        # Base de conhecimento da clínica (o "poder" da Solara para responder de verdade).
+        ctx["knowledge"] = _load_clinic_knowledge(clinic_id)
 
         return ctx
     except Exception:

@@ -184,6 +184,45 @@ def _find_patient_id(clinic_id: str | None, phone: str | None) -> str | None:
     return None
 
 
+def _extract_push_name(message_payload: dict[str, Any]) -> str | None:
+    """Nome de perfil do WhatsApp (pushName), quando a Evolution o envia."""
+    name = message_payload.get("pushName")
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    return None
+
+
+def _ensure_patient_id(clinic_id: str | None, phone: str | None, push_name: str | None) -> str | None:
+    """Garante um paciente estável para este número de WhatsApp.
+
+    Sem um paciente persistido, cada mensagem chega com patient_id=None: a Solara
+    perde a memória da conversa E se reapresenta toda vez (o estado de apresentação
+    é rastreado por paciente). Por isso, no primeiro contato, criamos o paciente
+    a partir do telefone (e do nome de perfil do WhatsApp, quando houver).
+    """
+    existing = _find_patient_id(clinic_id, phone)
+    if existing or not phone:
+        return existing
+
+    payload: dict[str, Any] = {
+        "name": push_name or f"Paciente {phone}",
+        "phone": phone,
+    }
+    if clinic_id:
+        payload["clinic_id"] = clinic_id
+
+    try:
+        result = supabase_client.table("patients").insert(payload).execute()
+        if result.data:
+            return result.data[0]["id"]
+    except Exception as exc:
+        logging.warning("Não foi possível criar paciente para o telefone %s: %s", phone, exc)
+        # Fallback: pode ter havido corrida (criado em paralelo) — tenta localizar de novo.
+        return _find_patient_id(clinic_id, phone)
+
+    return None
+
+
 def _fetch_conversation_history(patient_id: str | None, exclude_content: str, limit: int = 10) -> list[dict[str, str]]:
     """Histórico recente da conversa (para dar memória à Solara), em ordem cronológica."""
     if not patient_id:
@@ -392,9 +431,20 @@ async def _handle_evolution_webhook(request: Request, background_tasks: Backgrou
 
         remote_jid = _extract_remote_jid(message_payload)
         phone = _normalize_phone(remote_jid)
-        clinic_id = _find_clinic_id_by_instance(instance_name)
-        patient_id = _find_patient_id(clinic_id, phone)
         content = _extract_text_content(message_payload)
+        push_name = _extract_push_name(message_payload)
+
+        # Resolve a clínica logo cedo: pela instância e, se não bater (número único
+        # multi-clínica), pelo telefone do paciente.
+        clinic_id = _find_clinic_id_by_instance(instance_name) or _find_clinic_id_by_phone(phone)
+
+        is_group = _is_group(remote_jid)
+        # Garante um paciente estável para o número (memória + apresentação só 1x).
+        # Para mensagens da própria clínica ou de grupos, apenas tentamos localizar.
+        if sender_type == "patient" and phone and not is_group:
+            patient_id = _ensure_patient_id(clinic_id, phone, push_name)
+        else:
+            patient_id = _find_patient_id(clinic_id, phone)
 
         _persist_message(clinic_id, patient_id, content, sender_type, data)
 
@@ -405,13 +455,11 @@ async def _handle_evolution_webhook(request: Request, background_tasks: Backgrou
             and background_tasks is not None
             and content
             and content not in _NON_REPLYABLE
-            and not _is_group(remote_jid)
+            and not is_group
         )
         if should_reply:
-            # Número único multi-clínica: se não achou pela instância, identifica pelo telefone.
-            effective_clinic_id = clinic_id or _find_clinic_id_by_phone(phone)
             background_tasks.add_task(
-                _process_solara_reply, instance_name, phone, effective_clinic_id, patient_id, content
+                _process_solara_reply, instance_name, phone, clinic_id, patient_id, content
             )
 
         return {

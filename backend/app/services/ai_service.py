@@ -2,7 +2,7 @@ import os
 from openai import AsyncOpenAI
 from ..config import settings
 
-# Cliente oficial da OpenAI (modelo gpt-5-mini)
+# Cliente oficial da OpenAI (modelo definido em OPENAI_MODEL, ex.: gpt-5)
 client = AsyncOpenAI(
     api_key=settings.OPENAI_API_KEY,
     base_url=settings.OPENAI_BASE_URL
@@ -62,7 +62,8 @@ Quando o paciente quiser marcar/remarcar, reúna com naturalidade — sem soar f
 NUNCA liste essas informações todas de uma vez pedindo para o paciente responder tudo junto. Pergunte um item, espere, depois o próximo. Peça apenas o que ainda falta. Ao final, confirme o resumo dos dados antes de concluir.
 
 # GUARDRAILS (regras inquebráveis de confiança)
-- NUNCA invente preços, horários, disponibilidade de agenda, nomes de profissionais, convênios aceitos ou endereços.
+- Você TEM uma base de conhecimento da clínica em "DADOS DESTA CLÍNICA" (serviços, valores, horários, convênios, FAQ, políticas). Quando a resposta estiver lá, responda com confiança, naturalidade e iniciativa — não enrole nem diga "vou confirmar" se a informação já está disponível.
+- NUNCA invente preços, horários, disponibilidade de agenda, nomes de profissionais, convênios aceitos ou endereços que NÃO estejam nos dados abaixo.
 - Use SOMENTE os dados fornecidos na seção "DADOS DESTA CLÍNICA" abaixo. Se a informação não estiver lá e você não a tiver recebido do paciente, NÃO chute.
 - Quando faltar um dado que você não pode saber, faça uma destas três coisas: (a) pergunte ao paciente, (b) diga com transparência que vai confirmar com a equipe, ou (c) ofereça encaminhar para um atendente humano.
 - Nunca dê diagnóstico, prescrição, interpretação de exame ou conduta médica. Isso é exclusivo dos profissionais.
@@ -119,6 +120,67 @@ INTRO_NOTE_CONTINUE = """# APRESENTAÇÃO NESTA MENSAGEM
 Você JÁ se apresentou para este paciente nesta conversa. NÃO se apresente de novo: não diga "eu sou a Solara", não repita o nome da clínica como saudação de abertura e não recomece com boas-vindas. Apenas continue a conversa de onde parou, com naturalidade, como quem já está conversando há um tempo."""
 
 
+def _format_address(address: object) -> str:
+    """Normaliza o endereço, que pode vir como texto ou como JSONB {street, city, state, zip}."""
+    if isinstance(address, dict):
+        parts = [
+            str(address.get(k) or "").strip()
+            for k in ("street", "number", "neighborhood", "city", "state", "zip")
+        ]
+        return ", ".join(p for p in parts if p)
+    return str(address or "").strip()
+
+
+# Rótulos legíveis por tipo de entrada da base de conhecimento.
+_KNOWLEDGE_KIND_LABELS = {
+    "service": "Serviços oferecidos",
+    "price": "Valores",
+    "hours": "Horários de funcionamento",
+    "insurance": "Convênios aceitos",
+    "faq": "Perguntas frequentes",
+    "policy": "Políticas e orientações",
+    "general": "Informações gerais",
+}
+# Ordem de apresentação dos blocos de conhecimento.
+_KNOWLEDGE_KIND_ORDER = ["service", "price", "hours", "insurance", "faq", "policy", "general"]
+
+
+def _format_knowledge(knowledge: list) -> list[str]:
+    """Renderiza a base de conhecimento da clínica, agrupada por tipo, para o prompt."""
+    if not knowledge:
+        return []
+
+    grouped: dict[str, list[dict]] = {}
+    for entry in knowledge:
+        if not isinstance(entry, dict):
+            continue
+        content = (entry.get("content") or "").strip()
+        if not content:
+            continue
+        kind = (entry.get("kind") or "general").strip().lower()
+        if kind not in _KNOWLEDGE_KIND_LABELS:
+            kind = "general"
+        grouped.setdefault(kind, []).append(entry)
+
+    if not grouped:
+        return []
+
+    lines = ["- Base de conhecimento da clínica (use estas informações para responder com precisão):"]
+    for kind in _KNOWLEDGE_KIND_ORDER:
+        entries = grouped.get(kind)
+        if not entries:
+            continue
+        lines.append(f"  {_KNOWLEDGE_KIND_LABELS[kind]}:")
+        for entry in entries:
+            title = (entry.get("title") or "").strip()
+            content = (entry.get("content") or "").strip()
+            if title:
+                lines.append(f"    • {title}: {content}")
+            else:
+                lines.append(f"    • {content}")
+    return lines
+
+
 def _format_clinic_context(ctx: dict | None) -> str:
     """Monta o bloco de contexto real da clínica para injetar no system prompt."""
     if not ctx:
@@ -129,7 +191,7 @@ def _format_clinic_context(ctx: dict | None) -> str:
     name = (ctx.get("name") or "").strip()
     phone = (ctx.get("phone") or "").strip()
     email = (ctx.get("email") or "").strip()
-    address = (ctx.get("address") or "").strip()
+    address = _format_address(ctx.get("address"))
 
     if name:
         lines.append(f"- Nome da clínica: {name}")
@@ -152,6 +214,8 @@ def _format_clinic_context(ctx: dict | None) -> str:
                 lines.append(f"    • {sp_name} — {sp_spec}")
             elif sp_name:
                 lines.append(f"    • {sp_name}")
+
+    lines.extend(_format_knowledge(ctx.get("knowledge") or []))
 
     extra = (ctx.get("notes") or "").strip()
     if extra:
@@ -201,7 +265,7 @@ async def chat_with_solara(
     messages.extend(_normalize_chat_history(chat_history))
     messages.append({"role": "user", "content": user_message.strip()})
 
-    # gpt-5-mini (reasoning model) exige max_completion_tokens (não max_tokens) e
+    # gpt-5 (reasoning model) exige max_completion_tokens (não max_tokens) e
     # só aceita temperature=1 (default), por isso temperature é omitido.
     # reasoning_effort="low": resposta rápida para chat em tempo real.
     response = await client.chat.completions.create(
