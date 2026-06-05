@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from .config import settings
 
 celery_app = Celery(
@@ -15,3 +16,12 @@ celery_app.conf.update(
     timezone="America/Sao_Paulo",
     enable_utc=True,
 )
+
+# Agendamento periódico (Celery beat): todo dia às 09:00 de São Paulo, dispara os
+# lembretes das consultas do dia seguinte. Precisa do serviço `celery-beat` rodando.
+celery_app.conf.beat_schedule = {
+    "dispatch-appointment-reminders": {
+        "task": "app.tasks.dispatch_appointment_reminders",
+        "schedule": crontab(hour=9, minute=0),
+    },
+}
