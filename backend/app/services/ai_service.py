@@ -1,4 +1,5 @@
 import os
+import re
 from openai import AsyncOpenAI
 from ..config import settings
 
@@ -88,6 +89,7 @@ NUNCA liste essas informações todas de uma vez pedindo para o paciente respond
 - Demonstre empatia genuína: reconheça o que a pessoa sente ou precisa antes de orientar ("imagino que…", "entendo", "fico feliz em ajudar").
 - Pode usar 1 emoji discreto quando combinar com o tom — sem exageros.
 - Não se reapresente nem repita "como posso ajudar" a cada mensagem.
+- ANTI-REPETIÇÃO (regra forte): antes de responder, olhe a conversa até aqui. Nunca repita um cumprimento ("Oi", "Olá") já dado, nunca reapresente-se, nunca refaça uma pergunta que o paciente já respondeu e nunca reutilize a mesma frase de abertura da mensagem anterior. Se já cumprimentou, vá direto ao ponto.
 - Evite repetir a mesma estrutura em toda resposta.
 - Nunca seja ríspida, defensiva ou apressada.
 
@@ -116,8 +118,17 @@ Portanto: não invente informações específicas (preços, horários, endereço
 INTRO_NOTE_FIRST = """# APRESENTAÇÃO NESTA MENSAGEM
 Esta é a PRIMEIRA mensagem desta conversa com este paciente (ou a conversa recomeçou após um longo período de silêncio, como uma ligação que caiu e voltou). Apresente-se UMA única vez agora: diga que é a Solara e o nome da clínica, de forma curta e calorosa. Não repita a apresentação nas mensagens seguintes."""
 
+PATIENT_NAME_NOTE = """# NOME DO PACIENTE
+O paciente se chama {name}. Trate-o pelo primeiro nome com naturalidade e carinho — como uma atendente humana que reconhece quem está falando. NÃO repita o nome em toda mensagem (isso soa robótico e forçado): use de vez em quando, nos momentos certos (ao cumprimentar, ao acolher uma dúvida ou ao confirmar algo importante)."""
+
 INTRO_NOTE_CONTINUE = """# APRESENTAÇÃO NESTA MENSAGEM
-Você JÁ se apresentou para este paciente nesta conversa. NÃO se apresente de novo: não diga "eu sou a Solara", não repita o nome da clínica como saudação de abertura e não recomece com boas-vindas. Apenas continue a conversa de onde parou, com naturalidade, como quem já está conversando há um tempo."""
+Você JÁ se apresentou para este paciente nesta conversa. Esta é uma conversa EM ANDAMENTO.
+PROIBIDO nesta mensagem:
+- Dizer "Oi, eu sou a Solara" ou qualquer variação de se apresentar.
+- Abrir com "Oi!", "Olá!", "Bom dia" ou outra saudação de boas-vindas — vocês já estão conversando.
+- Repetir o nome da clínica como cumprimento de abertura.
+- Repetir "como posso te ajudar?" ou perguntas que o paciente já respondeu.
+Comece a resposta DIRETO no assunto, como quem continua um papo já em andamento. Olhe as mensagens anteriores e nunca repita o que você já disse — varie as palavras."""
 
 
 def _format_address(address: object) -> str:
@@ -229,6 +240,27 @@ def _format_clinic_context(ctx: dict | None) -> str:
     return "\n".join(lines)
 
 
+def _usable_first_name(name: str | None) -> str | None:
+    """Extrai um primeiro nome utilizável do pushName/cadastro, ou None se não servir.
+
+    Ignora o placeholder "Paciente <telefone>" e valores que não parecem nome real.
+    """
+    if not name:
+        return None
+    cleaned = name.strip()
+    if not cleaned or cleaned.lower().startswith("paciente "):
+        return None
+    _titles = {"dr", "dra", "sr", "sra", "srta", "prof", "profa"}
+    for token in re.split(r"\s+", cleaned):
+        first = token.strip(" .,-_*~")
+        if first.lower() in _titles:
+            continue  # pula título e busca o nome real no próximo token
+        if len(first) < 2 or not any(ch.isalpha() for ch in first):
+            continue
+        return first[:1].upper() + first[1:]
+    return None
+
+
 def _normalize_chat_history(chat_history: list | None) -> list[dict[str, str]]:
     if not chat_history:
         return []
@@ -246,11 +278,72 @@ def _normalize_chat_history(chat_history: list | None) -> list[dict[str, str]]:
     return normalized_history
 
 
+# --- Rede de segurança contra reapresentação (camada determinística) -----------
+# Mesmo com o prompt instruído, um modelo pode escorregar e abrir com "Oi! Eu sou
+# a Solara...". Quando o backend já decidiu que ela NÃO deve se apresentar, removemos
+# esse cumprimento/apresentação do início da resposta antes de enviar ao WhatsApp.
+
+# Interjeição de saudação de abertura ("Oi!", "Olá", "Bom dia").
+_GREETING_OPENER_RE = re.compile(
+    r"^\s*(?:oi+|ol[áa]|ola|opa|e?\s*a[íi]|hey|hello|bom\s+dia|boa\s+tarde|boa\s+noite)"
+    r"\b[\s,!.…\-—]*",
+    re.IGNORECASE,
+)
+
+# Frase de auto-apresentação ("eu sou a Solara", "aqui é a Solara da Clínica X").
+_SELF_INTRO_RE = re.compile(
+    r"^\s*(?:"
+    r"(?:eu\s+)?sou\s+a\s+solara"
+    r"|aqui\s+(?:é|e)\s+a\s+solara"
+    r"|quem\s+fala\s+(?:é|e)\s+a?\s*solara"
+    r"|meu\s+nome\s+(?:é|e)\s+solara"
+    r"|solara\s*,?\s+d[ao]\s+cl[íi]nica"
+    r")[^.!?\n]*[.!?]?\s*",
+    re.IGNORECASE,
+)
+
+# Emoji/símbolo solto que sobra no início depois de remover a saudação.
+_LEADING_EMOJI_RE = re.compile(r"^[\s←-➿\U0001F000-\U0001FAFF]+")
+
+
+def _strip_reintroduction(reply: str) -> str:
+    """Remove uma saudação/reapresentação no INÍCIO da resposta, preservando o conteúdo útil.
+
+    Aplicada só quando a Solara não deveria se apresentar (conversa em andamento).
+    Nunca devolve vazio: se a resposta era *apenas* apresentação, mantém o original.
+    """
+    if not reply or not reply.strip():
+        return reply
+
+    original = reply
+    # Mantém os separadores de balão (linha em branco) para reconstruir depois.
+    parts = re.split(r"(\n\s*\n)", reply.strip())
+    if not parts:
+        return reply
+
+    first = parts[0]
+    first = _GREETING_OPENER_RE.sub("", first, count=1)
+    # Remove apresentação(ões) encadeada(s) logo no começo.
+    for _ in range(2):
+        stripped = _SELF_INTRO_RE.sub("", first, count=1)
+        if stripped == first:
+            break
+        first = stripped
+    first = _LEADING_EMOJI_RE.sub("", first).lstrip()
+    if first:
+        first = first[0].upper() + first[1:]
+
+    parts[0] = first
+    rebuilt = re.sub(r"^(?:\s*\n)+", "", "".join(parts)).strip()
+    return rebuilt or original
+
+
 async def chat_with_solara(
     user_message: str,
     chat_history: list = None,
     clinic_context: dict | None = None,
     should_introduce: bool = True,
+    patient_name: str | None = None,
 ) -> str:
     intro_note = INTRO_NOTE_FIRST if should_introduce else INTRO_NOTE_CONTINUE
     system_content = (
@@ -260,6 +353,10 @@ async def chat_with_solara(
         + "\n\n"
         + intro_note
     )
+
+    first_name = _usable_first_name(patient_name)
+    if first_name:
+        system_content += "\n\n" + PATIENT_NAME_NOTE.format(name=first_name)
 
     messages = [{"role": "system", "content": system_content}]
     messages.extend(_normalize_chat_history(chat_history))
@@ -275,4 +372,9 @@ async def chat_with_solara(
         extra_body={"reasoning_effort": "low"},
     )
 
-    return response.choices[0].message.content
+    reply = response.choices[0].message.content
+    # Rede de segurança: numa conversa em andamento, corta qualquer reapresentação
+    # que o modelo tenha colocado no início, antes de enviar.
+    if not should_introduce:
+        reply = _strip_reintroduction(reply)
+    return reply

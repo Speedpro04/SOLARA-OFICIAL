@@ -223,6 +223,19 @@ def _ensure_patient_id(clinic_id: str | None, phone: str | None, push_name: str 
     return None
 
 
+def _get_patient_name(patient_id: str | None) -> str | None:
+    """Nome cadastrado do paciente (fallback quando o pushName não vem no evento)."""
+    if not patient_id:
+        return None
+    try:
+        res = supabase_client.table("patients").select("name").eq("id", patient_id).limit(1).execute()
+        if res.data:
+            return res.data[0].get("name")
+    except Exception as exc:
+        logging.warning("Falha ao buscar nome do paciente %s: %s", patient_id, exc)
+    return None
+
+
 def _fetch_conversation_history(patient_id: str | None, exclude_content: str, limit: int = 10) -> list[dict[str, str]]:
     """Histórico recente da conversa (para dar memória à Solara), em ordem cronológica."""
     if not patient_id:
@@ -389,14 +402,16 @@ async def _send_whatsapp_reply(instance_name: str | None, phone: str | None, tex
         return False
 
 
-async def _process_solara_reply(instance_name: str | None, phone: str | None, clinic_id: str | None, patient_id: str | None, content: str) -> None:
+async def _process_solara_reply(instance_name: str | None, phone: str | None, clinic_id: str | None, patient_id: str | None, content: str, patient_name: str | None = None) -> None:
     """Gera a resposta da Solara e devolve pelo WhatsApp (executado em background)."""
     try:
         from .ai import _load_clinic_context  # import tardio evita ciclo de importação
         clinic_context = _load_clinic_context(clinic_id) if clinic_id else None
         history = _fetch_conversation_history(patient_id, content)
         should_introduce = _should_introduce(patient_id)
-        reply = await chat_with_solara(content, history, clinic_context, should_introduce)
+        # Nome para personalizar o atendimento: pushName do WhatsApp ou nome cadastrado.
+        name_for_ai = patient_name or _get_patient_name(patient_id)
+        reply = await chat_with_solara(content, history, clinic_context, should_introduce, name_for_ai)
         if not reply or not reply.strip():
             return
 
@@ -459,7 +474,7 @@ async def _handle_evolution_webhook(request: Request, background_tasks: Backgrou
         )
         if should_reply:
             background_tasks.add_task(
-                _process_solara_reply, instance_name, phone, clinic_id, patient_id, content
+                _process_solara_reply, instance_name, phone, clinic_id, patient_id, content, push_name
             )
 
         return {
