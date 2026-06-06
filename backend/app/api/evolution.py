@@ -236,35 +236,94 @@ def _get_patient_name(patient_id: str | None) -> str | None:
     return None
 
 
-def _fetch_conversation_history(patient_id: str | None, exclude_content: str, limit: int = 10) -> list[dict[str, str]]:
-    """Histórico recente da conversa (para dar memória à Solara), em ordem cronológica."""
-    if not patient_id:
-        return []
-    try:
-        result = (
-            supabase_client.table("messages")
-            .select("content, sender_type, created_at")
-            .eq("patient_id", patient_id)
-            .order("created_at", desc=True)
-            .limit(limit)
-            .execute()
-        )
-        rows = list(reversed(result.data or []))
-        history: list[dict[str, str]] = []
-        for row in rows:
-            content = (row.get("content") or "").strip()
-            if not content or content in _NON_REPLYABLE:
-                continue
-            role = "user" if row.get("sender_type") == "patient" else "assistant"
-            history.append({"role": role, "content": content})
+def _conversation_patient_ids(clinic_id: str | None, phone: str | None, patient_id: str | None) -> list[str]:
+    """Todos os patient_id ligados a este número de WhatsApp (cobre cadastros duplicados).
 
-        # Remove a própria mensagem atual (já persistida) do fim do histórico, se presente.
-        if history and history[-1]["role"] == "user" and history[-1]["content"] == exclude_content:
-            history.pop()
-        return history
-    except Exception as exc:
-        logging.warning("Falha ao buscar histórico da conversa: %s", exc)
-        return []
+    Se o mesmo telefone virou mais de um cadastro (ex.: formato diferente entre painel
+    e webhook), o histórico fica espalhado em vários patient_id. Juntamos todos para que
+    apresentação e memória dependam do NÚMERO (estável), não de um cadastro específico.
+    """
+    ids: list[str] = []
+    if patient_id:
+        ids.append(patient_id)
+    if phone:
+        try:
+            query = supabase_client.table("patients").select("id")
+            if clinic_id:
+                query = query.eq("clinic_id", clinic_id)
+            result = query.eq("phone", phone).execute()
+            for row in result.data or []:
+                rid = row.get("id")
+                if rid and rid not in ids:
+                    ids.append(rid)
+        except Exception as exc:
+            logging.warning("Falha ao resolver pacientes pelo telefone %s: %s", phone, exc)
+    return ids
+
+
+def _fetch_conversation_rows(phone: str | None, patient_ids: list[str], limit: int) -> list[dict[str, Any]]:
+    """Mensagens desta conversa, identificada pelo TELEFONE (gravado no metadata) com
+    fallback por patient_id.
+
+    Esta é a base que impede a reapresentação: identificar a conversa pelo número torna
+    a busca imune a patient_id nulo OU a cadastros duplicados. Mensagens antigas (sem o
+    marcador de telefone) ainda são alcançadas pelo fallback de patient_id.
+    """
+    by_key: dict[str, dict[str, Any]] = {}
+
+    def _collect(rows: list[dict[str, Any]] | None) -> None:
+        for row in rows or []:
+            key = str(row.get("id")) if row.get("id") is not None else repr(row)
+            by_key.setdefault(key, row)
+
+    if phone:
+        try:
+            res = (
+                supabase_client.table("messages")
+                .select("id, content, sender_type, created_at")
+                .eq("metadata->>_conversation_phone", phone)
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            _collect(res.data)
+        except Exception as exc:
+            logging.warning("Falha ao buscar mensagens por telefone %s: %s", phone, exc)
+
+    if patient_ids:
+        try:
+            res = (
+                supabase_client.table("messages")
+                .select("id, content, sender_type, created_at")
+                .in_("patient_id", patient_ids)
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            _collect(res.data)
+        except Exception as exc:
+            logging.warning("Falha ao buscar mensagens por patient_id: %s", exc)
+
+    rows = list(by_key.values())
+    rows.sort(key=lambda r: str(r.get("created_at") or ""), reverse=True)
+    return rows[:limit]
+
+
+def _fetch_conversation_history(phone: str | None, patient_ids: list[str], exclude_content: str, limit: int = 10) -> list[dict[str, str]]:
+    """Histórico recente da conversa (para dar memória à Solara), em ordem cronológica."""
+    rows = list(reversed(_fetch_conversation_rows(phone, patient_ids, limit)))
+    history: list[dict[str, str]] = []
+    for row in rows:
+        content = (row.get("content") or "").strip()
+        if not content or content in _NON_REPLYABLE:
+            continue
+        role = "user" if row.get("sender_type") == "patient" else "assistant"
+        history.append({"role": role, "content": content})
+
+    # Remove a própria mensagem atual (já persistida) do fim do histórico, se presente.
+    if history and history[-1]["role"] == "user" and history[-1]["content"] == exclude_content:
+        history.pop()
+    return history
 
 
 def _parse_timestamp(value: Any) -> datetime.datetime | None:
@@ -283,36 +342,23 @@ def _parse_timestamp(value: Any) -> datetime.datetime | None:
         return None
 
 
-def _should_introduce(patient_id: str | None) -> bool:
+def _should_introduce(phone: str | None, patient_ids: list[str]) -> bool:
     """Decide se a Solara deve se apresentar nesta mensagem.
 
-    Apresenta-se quando:
-    - é o primeiro contato deste número (a Solara nunca respondeu antes), ou
-    - a conversa recomeçou após um longo silêncio (como uma ligação que caiu).
-    Caso contrário, NÃO se reapresenta — é a mesma conversa em andamento.
+    Decisão por CONVERSA (telefone), não por um patient_id — imune a cadastro
+    duplicado ou patient_id nulo. Apresenta-se só no primeiro contato (a Solara
+    nunca respondeu este número) ou quando a conversa recomeça após longo silêncio.
 
     Observação: a mensagem atual do paciente já foi persistida antes desta checagem,
-    então ela é a mais recente do histórico (rows[0]).
+    então ela aparece como a mais recente do histórico (rows[0]).
     """
-    if not patient_id:
-        # Sem paciente cadastrado não dá para rastrear o número; na primeira vez
-        # apresenta-se normalmente (comportamento padrão).
-        return True
-    try:
-        result = (
-            supabase_client.table("messages")
-            .select("sender_type, created_at")
-            .eq("patient_id", patient_id)
-            .order("created_at", desc=True)
-            .limit(30)
-            .execute()
-        )
-    except Exception as exc:
-        logging.warning("Falha ao verificar estado de apresentação da Solara: %s", exc)
-        # Na dúvida, não fica reapresentando (evita o comportamento que incomoda).
-        return False
+    rows = _fetch_conversation_rows(phone, patient_ids, limit=50)
 
-    rows = result.data or []
+    if not rows:
+        # Nada recuperável (sem rastro da conversa): NÃO fica reapresentando.
+        # O primeiro contato real é coberto porque a mensagem atual já foi persistida
+        # e aparece aqui — então rows só fica vazio em caso de erro/sem persistência.
+        return False
 
     # Se a Solara nunca respondeu este número antes, é o primeiro contato.
     if not any(r.get("sender_type") == "clinic" for r in rows):
@@ -330,13 +376,18 @@ def _should_introduce(patient_id: str | None) -> bool:
     return False
 
 
-def _persist_message(clinic_id: str | None, patient_id: str | None, content: str, sender_type: str, raw_payload: dict[str, Any]) -> None:
+def _persist_message(clinic_id: str | None, patient_id: str | None, content: str, sender_type: str, raw_payload: dict[str, Any], phone: str | None = None) -> None:
     try:
+        # Marca o telefone no metadata: é assim que a conversa é reconhecida depois,
+        # mesmo que o patient_id venha nulo ou duplicado (ver _fetch_conversation_rows).
+        metadata: dict[str, Any] = dict(raw_payload) if isinstance(raw_payload, dict) else {"raw": raw_payload}
+        if phone:
+            metadata["_conversation_phone"] = phone
         payload: dict[str, Any] = {
             "content": content,
             "sender_type": sender_type,
             "status": "received" if sender_type == "patient" else "sent",
-            "metadata": raw_payload,
+            "metadata": metadata,
         }
         if clinic_id:
             payload["clinic_id"] = clinic_id
@@ -407,8 +458,10 @@ async def _process_solara_reply(instance_name: str | None, phone: str | None, cl
     try:
         from .ai import _load_clinic_context  # import tardio evita ciclo de importação
         clinic_context = _load_clinic_context(clinic_id) if clinic_id else None
-        history = _fetch_conversation_history(patient_id, content)
-        should_introduce = _should_introduce(patient_id)
+        # Identifica a conversa pelo TELEFONE (estável), juntando cadastros duplicados.
+        conversation_ids = _conversation_patient_ids(clinic_id, phone, patient_id)
+        history = _fetch_conversation_history(phone, conversation_ids, content)
+        should_introduce = _should_introduce(phone, conversation_ids)
         # Nome para personalizar o atendimento: pushName do WhatsApp ou nome cadastrado.
         name_for_ai = patient_name or _get_patient_name(patient_id)
         reply = await chat_with_solara(content, history, clinic_context, should_introduce, name_for_ai)
@@ -423,7 +476,7 @@ async def _process_solara_reply(instance_name: str | None, phone: str | None, cl
             if index > 0:
                 await asyncio.sleep(delay_ms / 1000)
             # Registra cada balão como mensagem enviada (espelha o que o paciente recebe).
-            _persist_message(clinic_id, patient_id, bubble, "clinic", {"source": "solara_ai"})
+            _persist_message(clinic_id, patient_id, bubble, "clinic", {"source": "solara_ai"}, phone)
             await _send_whatsapp_reply(instance_name, phone, bubble, delay_ms)
     except Exception as exc:
         logging.exception("Falha ao gerar/enviar resposta da Solara: %s", exc)
@@ -461,7 +514,7 @@ async def _handle_evolution_webhook(request: Request, background_tasks: Backgrou
         else:
             patient_id = _find_patient_id(clinic_id, phone)
 
-        _persist_message(clinic_id, patient_id, content, sender_type, data)
+        _persist_message(clinic_id, patient_id, content, sender_type, data, phone)
 
         # ---- Resposta automática da Solara ----
         # Só para mensagens de TEXTO, de PACIENTES, fora de grupos.
