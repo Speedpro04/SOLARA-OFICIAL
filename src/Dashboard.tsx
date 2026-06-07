@@ -329,54 +329,55 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
   const handleSaveSpecialist = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSpecialist.name.trim() || !newSpecialist.specialty.trim()) {
-      console.error('Nome e Especialidade são obrigatórios!');
+      alert('Nome e Especialidade são obrigatórios!');
       return;
     }
 
     if (!clinicId) {
-      console.error('Erro: ID da clínica não encontrado. Tentativa de salvar especialista sem clinicId');
+      alert('Erro: clínica não identificada. Faça login novamente.');
       return;
     }
 
     setIsLoading(true);
-    console.log('Iniciando salvamento de especialista:', newSpecialist);
-    console.log('ID da Clínica:', clinicId);
+
+    // Dados que vão para o banco
+    const payload = {
+      name: newSpecialist.name.trim(),
+      email: newSpecialist.email.trim() || `${newSpecialist.name.toLowerCase().trim().replace(/\s+/g, '.')}@clinica.com`,
+      specialty: newSpecialist.specialty.trim(),
+      crm: newSpecialist.crm || null,
+      phone: newSpecialist.phone || null,
+      role: 'doctor',
+      clinic_id: clinicId,
+      active: true
+    };
+
+    const formBackup = newSpecialist;      // para restaurar caso dê erro
+    const tempId = 'temp-' + Date.now();
+
+    // 1. ATUALIZAÇÃO OTIMISTA: mostra o card na hora
+    setSpecialistsList(prev => [...prev, { id: tempId, ...payload }]);
+    setShowSpecialistModal(false);
+    setNewSpecialist({ name: '', email: '', specialty: '', crm: '', phone: '', active: true });
 
     try {
-      // 1. ATUALIZAÇÃO OTIMISTA: Salva na tela primeiro
-      const optimisticSpecialist = {
-        id: 'temp-' + Date.now(),
-        name: newSpecialist.name,
-        email: newSpecialist.email || `${newSpecialist.name.toLowerCase().replace(/\s+/g, '.')}@clinica.com`,
-        specialty: newSpecialist.specialty,
-        crm: newSpecialist.crm || null,
-        phone: newSpecialist.phone || null,
-        active: true
-      };
+      // 2. SALVA e já traz a linha REAL de volta (em vez de refazer toda a busca)
+      const { data, error } = await supabase
+        .from('users')
+        .insert([payload])
+        .select('id, name, email, specialty, crm, active')
+        .single();
 
-      setSpecialistsList(prev => [...prev, optimisticSpecialist]);
-      setShowSpecialistModal(false);
-      setNewSpecialist({ name: '', email: '', specialty: '', crm: '', phone: '', active: true });
+      if (error) throw error;
 
-      // 2. SALVA NO SUPABASE DEPOIS
-      const { error } = await supabase.from('users').insert([{
-        name: optimisticSpecialist.name,
-        email: optimisticSpecialist.email,
-        specialty: optimisticSpecialist.specialty,
-        crm: optimisticSpecialist.crm,
-        phone: optimisticSpecialist.phone,
-        role: 'doctor',
-        clinic_id: clinicId,
-        active: true
-      }]);
-
-      if (error) {
-        console.error('Erro ao sincronizar com Supabase:', error.message);
-      } else {
-        fetchData(); // Sincroniza com os dados reais
-      }
+      // 3. Troca o card temporário pela linha real — sem refetch, sem o "some em 5s"
+      setSpecialistsList(prev => prev.map(s => (s.id === tempId ? data : s)));
     } catch (error: any) {
-      console.error('Erro ao salvar especialista:', error);
+      // 4. ROLLBACK: remove o card que NÃO foi salvo, restaura o formulário e avisa
+      setSpecialistsList(prev => prev.filter(s => s.id !== tempId));
+      setNewSpecialist(formBackup);
+      setShowSpecialistModal(true);
+      alert('Não foi possível cadastrar o especialista: ' + (error?.message || 'erro desconhecido'));
     } finally {
       setIsLoading(false);
     }
