@@ -169,11 +169,7 @@ export async function loginUser(data: LoginData): Promise<SessionUser> {
 // =============================================
 // BILLING ACCESS
 // =============================================
-export async function hasActiveSubscription(_clinicId: string): Promise<boolean> {
-  // FORÇADO PARA TESTES E ACESSO IMEDIATO DO CLIENTE
-  return true;
-  
-  /* Logic below is temporarily bypassed
+export async function hasActiveSubscription(clinicId: string): Promise<boolean> {
   const { data, error } = await supabase
     .from('subscriptions')
     .select('status, created_at')
@@ -185,7 +181,15 @@ export async function hasActiveSubscription(_clinicId: string): Promise<boolean>
   if (error || !data) return false;
   const status = String(data.status || '').toLowerCase() as SubscriptionStatus;
   return status === 'active' || status === 'trialing';
-  */
+}
+
+/**
+ * Headers de autenticação para chamadas ao backend (FastAPI).
+ * Os endpoints protegidos exigem o JWT do Supabase no Authorization.
+ */
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
 }
 
 // =============================================

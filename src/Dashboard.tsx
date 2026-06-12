@@ -13,6 +13,7 @@ import Logo from './Logo';
 import PartnersPage from './PartnersPage';
 import PartnersAnalytics from './PartnersAnalytics';
 import { supabase } from './lib/supabase';
+import { getAuthHeaders } from './lib/auth';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -30,6 +31,18 @@ const SOLARA_WELCOME_MESSAGE = 'Olá! Sou a Solara, gestora inteligente do atend
 
 const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
   const [activeTab, setActiveTab] = useState('reception');
+  // Responsividade: viewport + menu lateral em modo gaveta no mobile
+  const [viewportWidth, setViewportWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1280);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isMobile = viewportWidth <= 768;
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  useEffect(() => {
+    if (!isMobile && mobileMenuOpen) setMobileMenuOpen(false);
+  }, [isMobile, mobileMenuOpen]);
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
@@ -145,7 +158,9 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
     if (!clinicId) return;
     try {
       const instanceName = `solara_${clinicId.substring(0, 8)}`;
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/whatsapp/status/${instanceName}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/whatsapp/status/${instanceName}`, {
+        headers: await getAuthHeaders()
+      });
       const data = await response.json();
       
       if (data.instance?.state === 'open') {
@@ -165,7 +180,9 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
     setWhatsappStatus('connecting');
     try {
       const instanceName = `solara_${clinicId.substring(0, 8)}`;
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/whatsapp/connect/${instanceName}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/whatsapp/connect/${instanceName}`, {
+        headers: await getAuthHeaders()
+      });
       const data = await response.json();
       
       if (data.base64) {
@@ -186,7 +203,10 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
     setIsSyncingWA(true);
     try {
       const instanceName = `solara_${clinicId.substring(0, 8)}`;
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/whatsapp/logout/${instanceName}`, { method: 'POST' });
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/whatsapp/logout/${instanceName}`, {
+        method: 'POST',
+        headers: await getAuthHeaders()
+      });
       setWhatsappStatus('disconnected');
       setQrCode(null);
     } catch (error) {
@@ -464,7 +484,8 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/ai/chat`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(await getAuthHeaders())
         },
         body: JSON.stringify({
           message: msg,
@@ -746,14 +767,48 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
   ].slice(0, 8); // Max 8 results
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: colors.bg, fontFamily: "'Outfit', sans-serif" }}>
-      
+    <div className="dash-root" style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: '100vh', backgroundColor: colors.bg, fontFamily: "'Outfit', sans-serif" }}>
+
+      {/* Regras responsivas: achatam grids e larguras fixas no mobile.
+          (!important vence os estilos inline usados em todo o dashboard) */}
+      <style>{`
+        @media (max-width: 1024px) {
+          .dash-main div[style*="grid-template-columns: repeat(4, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 768px) {
+          .dash-main div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+          .dash-main div[style*="height: calc(100vh - 250px)"] { height: auto !important; }
+          .dash-main div[style*="position: sticky"] { position: static !important; height: auto !important; }
+          .dash-main header > div { flex-wrap: wrap !important; gap: 12px; }
+          .dash-main div[style*="width: 285px"] { width: 100% !important; }
+          .dash-root div[style*="position: fixed"] > div { max-width: calc(100vw - 24px); }
+          .dash-root div[style*="z-index: 1000"] > div { max-height: calc(100vh - 40px); overflow-y: auto; }
+          .dash-root div[style*="z-index: 1000"] div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+          .dash-main button { max-width: 100%; }
+        }
+      `}</style>
+
+      {/* TOPBAR MOBILE (hambúrguer) */}
+      {isMobile && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 60, zIndex: 110, background: colors.sidebar, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
+          <Logo size={30} textColor="#fff" text="Solara Connect" />
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Abrir menu" style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: 8, display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={{ width: 24, height: 2, background: '#fff', display: 'block', transition: 'transform 0.2s', transform: mobileMenuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none' }} />
+            <span style={{ width: 24, height: 2, background: '#fff', display: 'block', opacity: mobileMenuOpen ? 0 : 1 }} />
+            <span style={{ width: 24, height: 2, background: '#fff', display: 'block', transition: 'transform 0.2s', transform: mobileMenuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none' }} />
+          </button>
+        </div>
+      )}
+      {isMobile && mobileMenuOpen && (
+        <div onClick={() => setMobileMenuOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 104 }} />
+      )}
+
       {/* SIDEBAR NAVEGAÇÃO */}
-      <div style={{ width: '280px', backgroundColor: colors.sidebar, color: '#fff', padding: '32px 20px', display: 'flex', flexDirection: 'column', position: 'fixed', left: 0, top: 0, height: '100vh', zIndex: 101, overflowY: 'auto' }}>
-        <div style={{ marginBottom: 40, padding: '0 12px' }}><Logo size={40} textColor="#fff" text="Solara Connect" /></div>
+      <div style={{ width: '280px', backgroundColor: colors.sidebar, color: '#fff', padding: isMobile ? '76px 20px 32px' : '32px 20px', display: 'flex', flexDirection: 'column', position: 'fixed', left: 0, top: 0, height: '100vh', zIndex: 105, overflowY: 'auto', transform: isMobile && !mobileMenuOpen ? 'translateX(-100%)' : 'translateX(0)', transition: 'transform 0.25s ease' }}>
+        {!isMobile && <div style={{ marginBottom: 40, padding: '0 12px' }}><Logo size={40} textColor="#fff" text="Solara Connect" /></div>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {menuItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 2, border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, transition: 'all 0.2s', backgroundColor: activeTab === item.id ? 'rgba(126, 214, 223, 0.15)' : 'transparent', color: activeTab === item.id ? colors.accent : 'rgba(255,255,255,0.6)', textAlign: 'left' }}>
+            <button key={item.id} onClick={() => { setActiveTab(item.id); setMobileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 2, border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, transition: 'all 0.2s', backgroundColor: activeTab === item.id ? 'rgba(126, 214, 223, 0.15)' : 'transparent', color: activeTab === item.id ? colors.accent : 'rgba(255,255,255,0.6)', textAlign: 'left' }}>
               {item.icon} {item.label}
               {activeTab === item.id && <motion.div layoutId="active" style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', backgroundColor: colors.accent }} />}
             </button>
@@ -766,8 +821,10 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
 
       {/* SEGUNDA BARRA: LISTA DE PACIENTES (EXCLUSIVO WHATSAPP) */}
       {activeTab === 'whatsapp' && (
-      <div style={{ width: '320px', backgroundColor: '#fff', borderRight: '1px solid rgba(0,0,0,0.05)', position: 'fixed', left: '280px', top: 0, height: '100vh', zIndex: 100, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '32px 24px 20px' }}>
+      <div style={isMobile
+        ? { width: '100%', backgroundColor: '#fff', borderBottom: '1px solid rgba(0,0,0,0.05)', position: 'relative', maxHeight: '40vh', zIndex: 1, display: activeChat ? 'none' : 'flex', flexDirection: 'column', marginTop: 60 }
+        : { width: '320px', backgroundColor: '#fff', borderRight: '1px solid rgba(0,0,0,0.05)', position: 'fixed', left: '280px', top: 0, height: '100vh', zIndex: 100, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: isMobile ? '16px 16px 12px' : '32px 24px 20px' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: colors.primary, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}><Users size={20} color={colors.accent} /> Clientes</h3>
           <div style={{ position: 'relative' }}>
             <Search size={18} color={colors.textMuted} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
@@ -825,11 +882,11 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       )}
 
       {/* MAIN CONTENT (MARGEM AJUSTADA DINAMICAMENTE) */}
-      <div style={{ flex: 1, marginLeft: activeTab === 'whatsapp' ? '600px' : '280px', display: 'flex', flexDirection: 'column' }}>
+      <div className="dash-main" style={{ flex: 1, marginLeft: isMobile ? 0 : (activeTab === 'whatsapp' ? '600px' : '280px'), marginTop: isMobile && activeTab !== 'whatsapp' ? 60 : 0, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         
         {/* HEADER */}
-        <header style={{ padding: '24px 40px', backgroundColor: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <header style={{ padding: isMobile ? '16px' : '24px 40px', backgroundColor: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', position: 'sticky', top: isMobile ? 60 : 0, zIndex: 50, borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+          <div style={{ display: 'flex', flexWrap: isMobile ? 'wrap' : 'nowrap', justifyContent: 'space-between', alignItems: 'center', gap: isMobile ? 12 : 0, marginBottom: 20 }}>
             <div style={{ flex: 1 }}>
               <h1 style={{ fontSize: '1.8rem', fontWeight: 600, color: colors.primary, marginBottom: 4 }}>
                 {menuItems.find(i => i.id === activeTab)?.label}
@@ -945,7 +1002,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
           <div style={{ height: 2, width: '100%', background: `linear-gradient(to right, ${colors.accent}, ${colors.success}, transparent)` }} />
         </header>
 
-        <div style={{ padding: '40px' }}>
+        <div style={{ padding: isMobile ? '16px' : '40px' }}>
           <AnimatePresence mode="wait">
             
             {/* VIEW: RECEPTION HIGH-TECH */}
@@ -1443,8 +1500,8 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
 
             {/* VIEW: WHATSAPP (EXPANDIDO) */}
             {activeTab === 'whatsapp' && (
-              <motion.div key="whatsapp" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ height: 'calc(100vh - 200px)', display: 'flex', justifyContent: 'center', paddingBottom: 20 }}>
-                <div style={{ width: '100%', maxWidth: 960, background: '#fff', borderRadius: 2, border: '12px solid #1e293b', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)', display: 'flex', overflow: 'hidden', position: 'relative' }}>
+              <motion.div key="whatsapp" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ height: isMobile ? 'calc(100vh - 240px)' : 'calc(100vh - 200px)', display: 'flex', justifyContent: 'center', paddingBottom: 20 }}>
+                <div style={{ width: '100%', maxWidth: 960, background: '#fff', borderRadius: 2, border: isMobile ? '4px solid #1e293b' : '12px solid #1e293b', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)', display: 'flex', overflow: 'hidden', position: 'relative' }}>
                   
                   {/* WhatsApp Web Style UI */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#e5ddd5', position: 'relative' }}>
@@ -1452,8 +1509,11 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.4, backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundRepeat: 'repeat', pointerEvents: 'none', zIndex: 1 }} />
                     
                     {/* Header */}
-                    <div style={{ padding: '14px 24px', background: '#f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.1)', position: 'relative', zIndex: 10 }}>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ padding: isMobile ? '10px 12px' : '14px 24px', background: '#f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.1)', position: 'relative', zIndex: 10 }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14 }}>
+                         {isMobile && activeChat && (
+                           <button onClick={() => { setActiveChat(null); setSelectedPatientId(null); }} aria-label="Voltar para a lista" style={{ background: 'transparent', border: 'none', color: '#54656f', cursor: 'pointer', padding: 4, fontSize: '1.4rem', lineHeight: 1 }}>←</button>
+                         )}
                          <div style={{ width: 45, height: 45, borderRadius: '50%', background: '#dfe5e7', color: '#54656f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '1.1rem' }}>
                             {activeChat?.name.charAt(0) || <MessageSquare size={20} />}
                          </div>
@@ -1471,7 +1531,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     </div>
 
                     {/* Messages Area */}
-                    <div style={{ flex: 1, padding: '20px 40px', display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', position: 'relative', zIndex: 5 }}>
+                    <div style={{ flex: 1, padding: isMobile ? '16px 12px' : '20px 40px', display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', position: 'relative', zIndex: 5 }}>
                        {!activeChat ? (
                          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20, textAlign: 'center' }}>
                            <div style={{ background: '#fff', padding: 40, borderRadius: '50%', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
@@ -1493,7 +1553,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                                  color: '#111', 
                                  padding: '6px 10px 14px 10px', 
                                  borderRadius: isMe ? '8px 0 8px 8px' : '0 8px 8px 8px', 
-                                 maxWidth: '65%', 
+                                 maxWidth: isMobile ? '85%' : '65%',
                                  boxShadow: '0 1px 1.5px rgba(0,0,0,0.15)', 
                                  fontSize: '0.95rem', 
                                  fontWeight: 400, 
@@ -2184,7 +2244,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
       </AnimatePresence>
 
       {/* FLOATING SOLARA ASSISTANT */}
-      <div style={{ position: 'fixed', bottom: 32, right: 32, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 16 }}>
+      <div style={{ position: 'fixed', bottom: isMobile ? 16 : 32, right: isMobile ? 16 : 32, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 16 }}>
         <AnimatePresence>
           {/* FAB Button para abrir Solara IA */}
           {!showSolara && (
@@ -2211,7 +2271,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
         </AnimatePresence>
         <AnimatePresence>
           {showSolara && (
-            <motion.div initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.9 }} style={{ width: 420, height: 610, background: '#fff', borderRadius: 2, boxShadow: '0 25px 60px -12px rgba(19, 15, 64, 0.4)', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <motion.div initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.9 }} style={{ width: isMobile ? 'calc(100vw - 32px)' : 420, height: isMobile ? 'min(610px, calc(100vh - 110px))' : 610, background: '#fff', borderRadius: 2, boxShadow: '0 25px 60px -12px rgba(19, 15, 64, 0.4)', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ background: colors.primary, padding: '24px', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 40, height: 40, background: colors.accent, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
