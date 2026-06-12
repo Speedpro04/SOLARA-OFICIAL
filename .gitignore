@@ -33,3 +33,9 @@ __pycache__/
 
 # Config local do Claude/preview
 .claude/
+
+# Rascunhos e arquivos temporários (não versionar)
+scratch/
+temp/
+temp2/
+temp_backup/
