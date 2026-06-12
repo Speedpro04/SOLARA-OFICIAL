@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from supabase import create_client
 from ..services.ai_service import chat_with_solara
+from ..services.auth_guard import require_clinic_user
 from ..config import settings
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
@@ -17,6 +18,10 @@ _rate_hits: dict[str, list[float]] = defaultdict(list)
 
 def _check_rate_limit(client_ip: str) -> None:
     now = time.time()
+    # Poda IPs antigos para o dicionário não crescer indefinidamente.
+    if len(_rate_hits) > 1000:
+        for ip in [ip for ip, hits in _rate_hits.items() if not hits or now - hits[-1] > RATE_LIMIT_WINDOW]:
+            _rate_hits.pop(ip, None)
     hits = [t for t in _rate_hits[client_ip] if now - t < RATE_LIMIT_WINDOW]
     if len(hits) >= RATE_LIMIT_MAX:
         raise HTTPException(status_code=429, detail="Muitas mensagens em pouco tempo. Aguarde alguns segundos.")
@@ -85,20 +90,17 @@ def _load_clinic_context(clinic_id: str | None) -> dict | None:
             return None
         ctx = dict(clinic_res.data[0])
 
-        # Profissionais: tenta filtrar pela clínica; se a coluna não existir no
-        # schema (especialistas globais), cai no fallback de ativos.
+        # Profissionais SEMPRE filtrados pela clínica. Sem fallback global:
+        # carregar especialistas de outras clínicas vazaria dados entre tenants.
         try:
-            sp_query = _supabase_admin.table("specialists").select("name, specialty").eq("active", True)
-            try:
-                sp_res = sp_query.eq("clinic_id", clinic_id).limit(50).execute()
-                if not sp_res.data:
-                    sp_res = _supabase_admin.table("specialists").select(
-                        "name, specialty"
-                    ).eq("active", True).limit(50).execute()
-            except Exception:
-                sp_res = _supabase_admin.table("specialists").select(
-                    "name, specialty"
-                ).eq("active", True).limit(50).execute()
+            sp_res = (
+                _supabase_admin.table("specialists")
+                .select("name, specialty")
+                .eq("active", True)
+                .eq("clinic_id", clinic_id)
+                .limit(50)
+                .execute()
+            )
             ctx["specialists"] = sp_res.data or []
         except Exception:
             ctx["specialists"] = []
@@ -119,6 +121,15 @@ async def chat_endpoint(request: ChatRequest, http_request: Request):
     """
     client_ip = (http_request.client.host if http_request.client else "unknown")
     _check_rate_limit(client_ip)
+
+    # Carregar dados reais de uma clínica exige usuário autenticado DESSA clínica.
+    # Sem isso, qualquer um extrairia a base de conhecimento (preços, políticas,
+    # profissionais) de qualquer clínica informando o clinic_id.
+    if request.clinic_id:
+        user = require_clinic_user(http_request)
+        if str(user["clinic_id"]) != str(request.clinic_id):
+            raise HTTPException(status_code=403, detail="Acesso negado para esta clínica")
+
     try:
         history = [message.model_dump() for message in request.chat_history] if request.chat_history else None
         clinic_context = _load_clinic_context(request.clinic_id)

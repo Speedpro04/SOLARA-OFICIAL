@@ -27,6 +27,12 @@ _CONVERSATION_RESET_GAP_SECONDS = 3 * 60 * 60  # 3 horas
 
 def _require_webhook_auth(request: Request) -> None:
     if not settings.EVOLUTION_WEBHOOK_SECRET:
+        # Em produção o secret é OBRIGATÓRIO (fail-closed): sem ele, qualquer um
+        # poderia injetar mensagens falsas e fazer a Solara responder.
+        if settings.ENVIRONMENT == "production":
+            logging.error("EVOLUTION_WEBHOOK_SECRET ausente em produção; webhook recusado.")
+            raise HTTPException(status_code=503, detail="Webhook não configurado (EVOLUTION_WEBHOOK_SECRET ausente)")
+        logging.warning("EVOLUTION_WEBHOOK_SECRET não configurado — webhook SEM autenticação (apenas dev).")
         return
 
     provided_token = request.query_params.get("token") or request.headers.get("x-webhook-token")
@@ -152,13 +158,12 @@ def _find_clinic_id_by_phone(phone: str | None) -> str | None:
     if not phone:
         return None
     try:
-        result = (
-            supabase_client.table("patients")
-            .select("clinic_id")
-            .or_(f"phone.eq.{phone},phone.like.%{phone}%")
-            .limit(1)
-            .execute()
-        )
+        query = supabase_client.table("patients").select("clinic_id")
+        if len(phone) >= 10:
+            query = query.or_(f"phone.eq.{phone},phone.like.%{phone}%")
+        else:
+            query = query.eq("phone", phone)
+        result = query.limit(1).execute()
         if result.data and result.data[0].get("clinic_id"):
             return result.data[0]["clinic_id"]
     except Exception as exc:
@@ -175,7 +180,13 @@ def _find_patient_id(clinic_id: str | None, phone: str | None) -> str | None:
         if clinic_id:
             query = query.eq("clinic_id", clinic_id)
 
-        result = query.or_(f"phone.eq.{phone},phone.like.%{phone}%").limit(1).execute()
+        # O match parcial (like) só é seguro com número completo; telefone curto
+        # casaria com qualquer cadastro que o contenha como substring.
+        if len(phone) >= 10:
+            query = query.or_(f"phone.eq.{phone},phone.like.%{phone}%")
+        else:
+            query = query.eq("phone", phone)
+        result = query.limit(1).execute()
         if result.data:
             return result.data[0]["id"]
     except Exception as exc:
@@ -261,13 +272,17 @@ def _conversation_patient_ids(clinic_id: str | None, phone: str | None, patient_
     return ids
 
 
-def _fetch_conversation_rows(phone: str | None, patient_ids: list[str], limit: int) -> list[dict[str, Any]]:
+def _fetch_conversation_rows(phone: str | None, patient_ids: list[str], limit: int, clinic_id: str | None = None) -> list[dict[str, Any]]:
     """Mensagens desta conversa, identificada pelo TELEFONE (gravado no metadata) com
     fallback por patient_id.
 
     Esta é a base que impede a reapresentação: identificar a conversa pelo número torna
     a busca imune a patient_id nulo OU a cadastros duplicados. Mensagens antigas (sem o
     marcador de telefone) ainda são alcançadas pelo fallback de patient_id.
+
+    Quando o clinic_id é conhecido, a busca é restrita a ele: o mesmo paciente pode
+    ser atendido por DUAS clínicas do sistema, e misturar os históricos vazaria a
+    conversa de uma clínica para a outra.
     """
     by_key: dict[str, dict[str, Any]] = {}
 
@@ -278,28 +293,28 @@ def _fetch_conversation_rows(phone: str | None, patient_ids: list[str], limit: i
 
     if phone:
         try:
-            res = (
+            query = (
                 supabase_client.table("messages")
                 .select("id, content, sender_type, created_at")
                 .eq("metadata->>_conversation_phone", phone)
-                .order("created_at", desc=True)
-                .limit(limit)
-                .execute()
             )
+            if clinic_id:
+                query = query.eq("clinic_id", clinic_id)
+            res = query.order("created_at", desc=True).limit(limit).execute()
             _collect(res.data)
         except Exception as exc:
             logging.warning("Falha ao buscar mensagens por telefone %s: %s", phone, exc)
 
     if patient_ids:
         try:
-            res = (
+            query = (
                 supabase_client.table("messages")
                 .select("id, content, sender_type, created_at")
                 .in_("patient_id", patient_ids)
-                .order("created_at", desc=True)
-                .limit(limit)
-                .execute()
             )
+            if clinic_id:
+                query = query.eq("clinic_id", clinic_id)
+            res = query.order("created_at", desc=True).limit(limit).execute()
             _collect(res.data)
         except Exception as exc:
             logging.warning("Falha ao buscar mensagens por patient_id: %s", exc)
@@ -309,9 +324,9 @@ def _fetch_conversation_rows(phone: str | None, patient_ids: list[str], limit: i
     return rows[:limit]
 
 
-def _fetch_conversation_history(phone: str | None, patient_ids: list[str], exclude_content: str, limit: int = 10) -> list[dict[str, str]]:
+def _fetch_conversation_history(phone: str | None, patient_ids: list[str], exclude_content: str, limit: int = 10, clinic_id: str | None = None) -> list[dict[str, str]]:
     """Histórico recente da conversa (para dar memória à Solara), em ordem cronológica."""
-    rows = list(reversed(_fetch_conversation_rows(phone, patient_ids, limit)))
+    rows = list(reversed(_fetch_conversation_rows(phone, patient_ids, limit, clinic_id)))
     history: list[dict[str, str]] = []
     for row in rows:
         content = (row.get("content") or "").strip()
@@ -342,7 +357,7 @@ def _parse_timestamp(value: Any) -> datetime.datetime | None:
         return None
 
 
-def _should_introduce(phone: str | None, patient_ids: list[str]) -> bool:
+def _should_introduce(phone: str | None, patient_ids: list[str], clinic_id: str | None = None) -> bool:
     """Decide se a Solara deve se apresentar nesta mensagem.
 
     Decisão por CONVERSA (telefone), não por um patient_id — imune a cadastro
@@ -352,7 +367,7 @@ def _should_introduce(phone: str | None, patient_ids: list[str]) -> bool:
     Observação: a mensagem atual do paciente já foi persistida antes desta checagem,
     então ela aparece como a mais recente do histórico (rows[0]).
     """
-    rows = _fetch_conversation_rows(phone, patient_ids, limit=50)
+    rows = _fetch_conversation_rows(phone, patient_ids, limit=50, clinic_id=clinic_id)
 
     if not rows:
         # Nada recuperável (sem rastro da conversa): NÃO fica reapresentando.
@@ -374,6 +389,129 @@ def _should_introduce(phone: str | None, patient_ids: list[str]) -> bool:
                 return True
 
     return False
+
+
+# --- Confirmação de consulta via lembrete (Sim/Não) ---------------------------
+# O lembrete diário pede "responda Sim ou Não". A resposta é tratada aqui de forma
+# determinística: confirma ou cancela a consulta no banco e responde na hora,
+# sem passar pela IA (que não tem acesso à agenda).
+
+_CONFIRM_YES_WORDS = {
+    "sim", "confirmo", "confirmado", "confirmada", "confirmar", "pode confirmar",
+    "vou sim", "estarei la", "estarei lá", "claro", "com certeza", "positivo",
+}
+_CONFIRM_NO_WORDS = {
+    "nao", "não", "nao vou", "não vou", "nao poderei", "não poderei",
+    "nao consigo", "não consigo", "cancela", "cancelar", "desmarcar",
+    "quero cancelar", "preciso cancelar", "nao vou conseguir", "não vou conseguir",
+}
+# Lembrete vale por este período: respostas "sim" muito depois não são confirmação.
+_REMINDER_REPLY_WINDOW_HOURS = 48
+
+
+def _match_confirmation_intent(content: str) -> str | None:
+    """Retorna "yes", "no" ou None para a mensagem do paciente."""
+    text = re.sub(r"[!.,…👍🙏✅❌\s]+$", "", (content or "").strip().lower())
+    text = re.sub(r"^[\s👍🙏✅❌]+", "", text)
+    if text in _CONFIRM_YES_WORDS:
+        return "yes"
+    if text in _CONFIRM_NO_WORDS:
+        return "no"
+    return None
+
+
+def _find_appointment_awaiting_confirmation(clinic_id: str | None, patient_ids: list[str]) -> dict[str, Any] | None:
+    """Próxima consulta futura deste paciente que recebeu lembrete recentemente."""
+    if not patient_ids:
+        return None
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    window_start = now_utc - datetime.timedelta(hours=_REMINDER_REPLY_WINDOW_HOURS)
+    try:
+        query = (
+            supabase_client.table("appointments")
+            .select("id, start_time, status, reminder_sent_at, patient_id")
+            .in_("patient_id", patient_ids)
+            .in_("status", ["pending", "confirmed"])
+            .not_.is_("reminder_sent_at", "null")
+            .gte("start_time", now_utc.isoformat())
+        )
+        if clinic_id:
+            query = query.eq("clinic_id", clinic_id)
+        res = query.order("start_time", desc=False).limit(5).execute()
+    except Exception as exc:
+        logging.warning("Falha ao buscar consulta aguardando confirmação: %s", exc)
+        return None
+
+    for appt in res.data or []:
+        sent_at = _parse_timestamp(appt.get("reminder_sent_at"))
+        if sent_at and sent_at >= window_start:
+            return appt
+    return None
+
+
+def _format_appointment_local(raw_start: Any) -> str:
+    """Data/hora da consulta em pt-BR no fuso de São Paulo (ex.: 14/06 às 09:30)."""
+    dt = _parse_timestamp(raw_start)
+    if not dt:
+        return ""
+    try:
+        from zoneinfo import ZoneInfo
+        local = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
+        return local.strftime("%d/%m às %H:%M")
+    except Exception:
+        return dt.strftime("%d/%m às %H:%M")
+
+
+async def _try_handle_reminder_confirmation(
+    instance_name: str | None,
+    phone: str | None,
+    clinic_id: str | None,
+    patient_ids: list[str],
+    content: str,
+) -> bool:
+    """Trata "Sim"/"Não" como confirmação/cancelamento da consulta lembrada.
+
+    Retorna True se a mensagem foi consumida aqui (a IA não deve responder).
+    """
+    intent = _match_confirmation_intent(content)
+    if not intent:
+        return False
+
+    appt = _find_appointment_awaiting_confirmation(clinic_id, patient_ids)
+    if not appt:
+        return False
+
+    new_status = "confirmed" if intent == "yes" else "cancelled"
+    try:
+        supabase_client.table("appointments").update({"status": new_status}).eq("id", appt["id"]).execute()
+    except Exception as exc:
+        logging.warning("Falha ao atualizar status da consulta %s: %s", appt.get("id"), exc)
+        return False  # deixa a IA acolher, em vez de silenciar o paciente
+
+    when = _format_appointment_local(appt.get("start_time"))
+    if intent == "yes":
+        reply = (
+            f"Perfeito! ✅ Sua consulta do dia {when} está confirmada."
+            if when
+            else "Perfeito! ✅ Sua consulta está confirmada."
+        )
+        reply += "\n\nQualquer coisa antes da consulta, é só me chamar por aqui."
+    else:
+        reply = (
+            f"Tudo bem, já cancelei sua consulta do dia {when}."
+            if when
+            else "Tudo bem, sua consulta foi cancelada."
+        )
+        reply += "\n\nSe quiser, posso te ajudar a remarcar para um dia melhor. É só me dizer. 😊"
+
+    for index, bubble in enumerate(_split_into_bubbles(reply)):
+        if index > 0:
+            await asyncio.sleep(_typing_delay_ms(bubble) / 1000)
+        _persist_message(clinic_id, appt.get("patient_id"), bubble, "clinic", {"source": "reminder_confirmation"}, phone)
+        await _send_whatsapp_reply(instance_name, phone, bubble, _typing_delay_ms(bubble))
+
+    logging.info("Consulta %s marcada como %s via resposta de lembrete.", appt.get("id"), new_status)
+    return True
 
 
 def _persist_message(clinic_id: str | None, patient_id: str | None, content: str, sender_type: str, raw_payload: dict[str, Any], phone: str | None = None) -> None:
@@ -460,11 +598,19 @@ async def _process_solara_reply(instance_name: str | None, phone: str | None, cl
         clinic_context = _load_clinic_context(clinic_id) if clinic_id else None
         # Identifica a conversa pelo TELEFONE (estável), juntando cadastros duplicados.
         conversation_ids = _conversation_patient_ids(clinic_id, phone, patient_id)
-        history = _fetch_conversation_history(phone, conversation_ids, content)
-        should_introduce = _should_introduce(phone, conversation_ids)
+
+        # Resposta determinística do lembrete (Sim/Não confirma ou cancela a
+        # consulta). Se tratada aqui, não cai na IA.
+        if await _try_handle_reminder_confirmation(instance_name, phone, clinic_id, conversation_ids, content):
+            return
+
+        history = _fetch_conversation_history(phone, conversation_ids, content, clinic_id=clinic_id)
+        should_introduce = _should_introduce(phone, conversation_ids, clinic_id)
         # Nome para personalizar o atendimento: pushName do WhatsApp ou nome cadastrado.
         name_for_ai = patient_name or _get_patient_name(patient_id)
-        reply = await chat_with_solara(content, history, clinic_context, should_introduce, name_for_ai)
+        # Contexto de agendamento real: permite à Solara criar a pré-reserva na agenda.
+        booking = {"clinic_id": clinic_id, "patient_id": patient_id} if clinic_id and patient_id else None
+        reply = await chat_with_solara(content, history, clinic_context, should_introduce, name_for_ai, booking)
         if not reply or not reply.strip():
             return
 
@@ -502,6 +648,19 @@ async def _handle_evolution_webhook(request: Request, background_tasks: Backgrou
         content = _extract_text_content(message_payload)
         push_name = _extract_push_name(message_payload)
 
+        # Metadata COMPACTO: gravar o payload bruto inteiro acumulava dados
+        # pessoais e lixo técnico no banco (LGPD + custo). Só o necessário.
+        key_block = message_payload.get("key") if isinstance(message_payload.get("key"), dict) else {}
+        compact_meta: dict[str, Any] = {
+            "event": event_name,
+            "instance": instance_name,
+            "message_id": key_block.get("id"),
+            "from_me": _is_from_me(message_payload),
+            "push_name": push_name,
+            "timestamp": message_payload.get("messageTimestamp"),
+        }
+        compact_meta = {k: v for k, v in compact_meta.items() if v is not None}
+
         # Resolve a clínica logo cedo: pela instância e, se não bater (número único
         # multi-clínica), pelo telefone do paciente.
         clinic_id = _find_clinic_id_by_instance(instance_name) or _find_clinic_id_by_phone(phone)
@@ -514,7 +673,7 @@ async def _handle_evolution_webhook(request: Request, background_tasks: Backgrou
         else:
             patient_id = _find_patient_id(clinic_id, phone)
 
-        _persist_message(clinic_id, patient_id, content, sender_type, data, phone)
+        _persist_message(clinic_id, patient_id, content, sender_type, compact_meta, phone)
 
         # ---- Resposta automática da Solara ----
         # Só para mensagens de TEXTO, de PACIENTES, fora de grupos.

@@ -10,9 +10,27 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Origens confiáveis: domínios oficiais + FRONTEND_URL + extras via CORS_ORIGINS.
+# Em desenvolvimento, libera também o Vite local.
+def _allowed_origins() -> list[str]:
+    origins = {
+        "https://solaraconnect.online",
+        "https://www.solaraconnect.online",
+        "https://app.solaraconnect.online",
+    }
+    if settings.FRONTEND_URL:
+        origins.add(settings.FRONTEND_URL.rstrip("/"))
+    for extra in settings.CORS_ORIGINS.split(","):
+        extra = extra.strip().rstrip("/")
+        if extra:
+            origins.add(extra)
+    if settings.ENVIRONMENT != "production":
+        origins.update({"http://localhost:5173", "http://127.0.0.1:5173"})
+    return sorted(origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

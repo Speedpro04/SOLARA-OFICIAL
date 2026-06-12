@@ -1,7 +1,12 @@
 import os
 import re
+import json
+import logging
+import datetime
+from zoneinfo import ZoneInfo
 from openai import AsyncOpenAI
 from ..config import settings
+from .appointment_service import BOOKING_TOOL, create_preappointment
 
 # Cliente oficial da OpenAI (modelo definido em OPENAI_MODEL, ex.: gpt-5)
 client = AsyncOpenAI(
@@ -120,6 +125,18 @@ Portanto: não invente informações específicas (preços, horários, endereço
 # número (ele só vê as últimas mensagens), então quem decide é o código.
 INTRO_NOTE_FIRST = """# APRESENTAÇÃO NESTA MENSAGEM
 Esta é a PRIMEIRA interação da sessão. Apresente-se UMA única vez agora: diga que é a Solara e o nome da clínica, de forma curta e calorosa. Depois da apresentação inicial, responda diretamente à solicitação do paciente e nunca repita a apresentação durante a mesma conversa. Só volte a se apresentar se a sessão for considerada nova."""
+
+BOOKING_NOTE = """# PRÉ-AGENDAMENTO (você TEM esse poder nesta conversa)
+Você dispõe da ferramenta criar_pre_agendamento. Fluxo obrigatório:
+1. Colete com naturalidade: especialidade/serviço, dia desejado e período (manhã/tarde), convênio ou particular.
+2. Confirme o resumo com o paciente em UMA mensagem curta ("Posso pré-reservar [serviço] para [dia] [período]?").
+3. Quando o paciente confirmar, CHAME a ferramenta criar_pre_agendamento — não diga que vai anotar "depois": registre na hora.
+4. Com o retorno ok=true: diga que ficou PRÉ-AGENDADO e que a equipe confirma o horário exato em breve por aqui. NUNCA afirme que o horário está garantido nem invente hora exata.
+5. Com ok=false: explique com leveza, siga a instrução do campo "error" (pedir nova data ou encaminhar à equipe).
+Nunca chame a ferramenta sem o paciente ter confirmado o resumo."""
+
+CURRENT_DATETIME_NOTE = """# DATA E HORA ATUAIS
+Agora é {now} (horário de Brasília). Use isso para interpretar "hoje", "amanhã", "sexta que vem" etc. ao montar datas."""
 
 PATIENT_NAME_NOTE = """# NOME DO PACIENTE
 O paciente se chama {name}. Trate-o pelo primeiro nome com naturalidade e carinho — como uma atendente humana que reconhece quem está falando. NÃO repita o nome em toda mensagem (isso soa robótico e forçado): use de vez em quando, nos momentos certos (ao cumprimentar, ao acolher uma dúvida ou ao confirmar algo importante)."""
@@ -341,21 +358,55 @@ def _strip_reintroduction(reply: str) -> str:
     return rebuilt or original
 
 
+def _execute_booking_tool(tool_call, booking: dict) -> str:
+    """Executa criar_pre_agendamento e devolve o resultado serializado para o modelo."""
+    try:
+        args = json.loads(tool_call.function.arguments or "{}")
+    except Exception:
+        args = {}
+    result = create_preappointment(
+        clinic_id=booking.get("clinic_id"),
+        patient_id=booking.get("patient_id"),
+        date=str(args.get("date") or ""),
+        period=args.get("period"),
+        time=args.get("time"),
+        specialty=args.get("specialty"),
+        specialist_name=args.get("specialist_name"),
+        insurance=args.get("insurance"),
+        notes=args.get("notes"),
+    )
+    logging.info("Solara criou pré-agendamento: %s", {k: result.get(k) for k in ("ok", "appointment_id", "error")})
+    return json.dumps(result, ensure_ascii=False)
+
+
 async def chat_with_solara(
     user_message: str,
     chat_history: list = None,
     clinic_context: dict | None = None,
     should_introduce: bool = True,
     patient_name: str | None = None,
+    booking: dict | None = None,
 ) -> str:
+    """Gera a resposta da Solara.
+
+    booking: {"clinic_id", "patient_id"} habilita o pré-agendamento real
+    (function-calling). Sem ele (ex.: chat do dashboard), a Solara apenas conversa.
+    """
     intro_note = INTRO_NOTE_FIRST if should_introduce else INTRO_NOTE_CONTINUE
+    now_local = datetime.datetime.now(ZoneInfo("America/Sao_Paulo"))
     system_content = (
         SOLARA_SYSTEM_PROMPT
         + "\n\n"
         + _format_clinic_context(clinic_context)
         + "\n\n"
+        + CURRENT_DATETIME_NOTE.format(now=now_local.strftime("%A, %d/%m/%Y %H:%M"))
+        + "\n\n"
         + intro_note
     )
+
+    booking_enabled = bool(booking and booking.get("clinic_id") and booking.get("patient_id"))
+    if booking_enabled:
+        system_content += "\n\n" + BOOKING_NOTE
 
     first_name = _usable_first_name(patient_name)
     if first_name:
@@ -365,17 +416,41 @@ async def chat_with_solara(
     messages.extend(_normalize_chat_history(chat_history))
     messages.append({"role": "user", "content": user_message.strip()})
 
+    tools = [BOOKING_TOOL] if booking_enabled else None
+
     # gpt-5 (reasoning model) exige max_completion_tokens (não max_tokens) e
     # só aceita temperature=1 (default), por isso temperature é omitido.
     # reasoning_effort="low": resposta rápida para chat em tempo real.
-    response = await client.chat.completions.create(
-        model=settings.MODEL_LLM,
-        messages=messages,
-        max_completion_tokens=1024,
-        extra_body={"reasoning_effort": "low"},
-    )
+    def _request_kwargs():
+        kwargs = {
+            "model": settings.MODEL_LLM,
+            "messages": messages,
+            "max_completion_tokens": 1024,
+            "extra_body": {"reasoning_effort": "low"},
+        }
+        if tools:
+            kwargs["tools"] = tools
+        return kwargs
 
-    reply = response.choices[0].message.content
+    response = await client.chat.completions.create(**_request_kwargs())
+    message = response.choices[0].message
+
+    # Ciclo de ferramenta: o modelo decide agendar -> executamos -> ele redige a
+    # resposta final ao paciente com o resultado real (máx. 2 rodadas por segurança).
+    rounds = 0
+    while booking_enabled and getattr(message, "tool_calls", None) and rounds < 2:
+        rounds += 1
+        messages.append(message.model_dump(exclude_none=True))
+        for tool_call in message.tool_calls:
+            if tool_call.function.name == "criar_pre_agendamento":
+                content = _execute_booking_tool(tool_call, booking)
+            else:
+                content = json.dumps({"ok": False, "error": "Ferramenta desconhecida."}, ensure_ascii=False)
+            messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": content})
+        response = await client.chat.completions.create(**_request_kwargs())
+        message = response.choices[0].message
+
+    reply = message.content or ""
     # Rede de segurança: numa conversa em andamento, corta qualquer reapresentação
     # que o modelo tenha colocado no início, antes de enviar.
     if not should_introduce:

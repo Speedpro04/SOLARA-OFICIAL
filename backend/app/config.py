@@ -71,4 +71,11 @@ class Settings:
     ENABLE_DEV_PASS = os.getenv("ENABLE_DEV_PASS", "false").lower() == "true"
     DEV_PASS_SECRET = os.getenv("DEV_PASS_SECRET", "")
 
+    # Ambiente de execução ("development" | "production"). Em produção, proteções
+    # como o token do webhook da Evolution passam a ser obrigatórias (fail-closed).
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development").strip().lower()
+
+    # Origens extras permitidas no CORS (separadas por vírgula), além do FRONTEND_URL.
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "")
+
 settings = Settings()

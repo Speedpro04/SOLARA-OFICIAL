@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 import httpx
 import logging
 from urllib.parse import urlencode
 
 router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
 from ..config import settings
+from ..services.auth_guard import require_clinic_user, require_instance_access
 
 WEBHOOK_EVENTS = [
     "QRCODE_UPDATED",
@@ -79,10 +80,12 @@ async def _configure_instance_settings(client: httpx.AsyncClient, instance_name:
     return response.json()
 
 @router.get("/status/{instance_name}")
-async def get_status(instance_name: str):
+async def get_status(instance_name: str, request: Request):
     """
     Verifica o status da instância na Evolution API
     """
+    user = require_clinic_user(request)
+    require_instance_access(user, instance_name)
     url = f"{settings.EVOLUTION_API_URL}/instance/connectionStatus/{instance_name}"
     
     async with httpx.AsyncClient() as client:
@@ -93,10 +96,12 @@ async def get_status(instance_name: str):
             raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/connect/{instance_name}")
-async def connect_instance(instance_name: str):
+async def connect_instance(instance_name: str, request: Request):
     """
     Cria a instância se não existir e retorna o QR Code
     """
+    user = require_clinic_user(request)
+    require_instance_access(user, instance_name)
     create_url = f"{settings.EVOLUTION_API_URL}/instance/create"
     payload = {
         "instanceName": instance_name,
@@ -123,10 +128,12 @@ async def connect_instance(instance_name: str):
         return result
 
 @router.post("/logout/{instance_name}")
-async def logout_instance(instance_name: str):
+async def logout_instance(instance_name: str, request: Request):
     """
     Desconecta o WhatsApp da instância
     """
+    user = require_clinic_user(request)
+    require_instance_access(user, instance_name)
     url = f"{settings.EVOLUTION_API_URL}/instance/logout/{instance_name}"
     
     async with httpx.AsyncClient() as client:
