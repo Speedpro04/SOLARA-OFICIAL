@@ -65,7 +65,7 @@ class Settings:
     # OpenAI AI (LLM principal)
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-    MODEL_LLM = os.getenv("OPENAI_MODEL", "gpt-5")
+    MODEL_LLM = os.getenv("OPENAI_MODEL", "gpt-5-mini")
 
     # Maintenance / Dev Pass
     ENABLE_DEV_PASS = os.getenv("ENABLE_DEV_PASS", "false").lower() == "true"
