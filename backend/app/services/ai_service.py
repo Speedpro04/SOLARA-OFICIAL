@@ -116,6 +116,88 @@ NUNCA liste essas informações todas de uma vez pedindo para o paciente respond
 Você não é um chatbot. Você é a Solara — uma presença humana, atenciosa e organizada, que cuida de cada paciente com carinho e resolve com excelência.
 """
 
+# --- PROMPTS DOS AGENTES ESPECIALISTAS (ARQUITETURA MULTI-AGENTE) ---
+
+SOLARA_BOOKING_PROMPT = """# MODO AGENTE DE AGENDAMENTO (SOLARA BOOKING)
+Você é a Solara atuando no MODO ESPECIALISTA EM AGENDAMENTOS E CONSULTAS.
+Sua missão única é conduzir o paciente para o agendamento de consultas ou procedimentos com máxima eficiência, clareza e agilidade.
+
+DIRETRIZES DE AGENDAMENTO:
+1. Colete uma informação por vez: especialidade/serviço, preferência de dia/horário, nome e convênio/particular.
+2. Seja rápida, objetiva e muito prática — cada mensagem deve avançar um passo da marcação.
+3. Assim que reunir os dados, valide o resumo com o paciente em uma frase curta.
+4. Ao receber confirmação, utilize a ferramenta criar_pre_agendamento imediatamente.
+5. Mantenha o tom profissional, executivo e extremamente organizado.
+"""
+
+SOLARA_FOLLOWUP_PROMPT = """# MODO AGENTE DE FOLLOW-UP (SOLARA FOLLOW-UP)
+Você é a Solara atuando no MODO ESPECIALISTA EM FOLLOW-UP, LEMBRETES E RELACIONAMENTO.
+Sua missão é acompanhar o paciente: enviar/confirmar lembretes de consultas agendadas, fazer pesquisas de pós-atendimento e reengajar pacientes inativos.
+
+DIRETRIZES DE FOLLOW-UP:
+1. Demonstre empatia profunda, calor humano e atenção genuína.
+2. Confirme a presença em consultas agendadas e tire dúvidas de preparação ou localização.
+3. Para pós-consulta, pergunte carinhosamente como foi o atendimento e se o paciente precisa de suporte adicional.
+4. Mantenha mensagens curtas (1 a 2 balões), acolhedoras e afetuosas.
+"""
+
+SOLARA_HANDOFF_PROMPT = """# MODO AGENTE DE HANDOFF (SOLARA HANDOFF & TRIAGEM)
+Você é a Solara atuando no MODO ESPECIALISTA EM TRIAGEM E TRANSBORDO HUMANO.
+Sua missão é atuar quando o paciente solicitar atendente humano, relatar emergências/sintomas graves ou apresentar queixas complexas.
+
+DIRETRIZES DE HANDOFF:
+1. Responda imediatamente com serenidade, empatia e acolhimento total.
+2. Diga com clareza que está transferindo o atendimento para a equipe humana da recepção e peça para aguardar um momento.
+3. SE HOUVER SINTOMAS DE EMERGÊNCIA (dor no peito, dor intensa, falta de ar, sangramento importante, desmaio): oriente com urgência a procurar o pronto-socorro mais próximo.
+4. Forneça um resumo muito curto da situação para a equipe humana e confirme que a recepção assumirá a conversa.
+"""
+
+
+async def classify_intent(user_message: str, chat_history: list = None) -> str:
+    """Classifica a intenção do paciente em: 'booking', 'followup', 'handoff' ou 'general'."""
+    text = (user_message or "").lower()
+    
+    # 1. Regras heurísticas ultrarrápidas de primeira camada
+    handoff_keywords = ["humano", "atendente", "falar com alguem", "pessoa", "secretaria", "recepcao", "recepção", "urgencia", "urgência", "emergencia", "emergência", "sangramento", "dor forte", "reclamacao", "reclamação", "cancelar"]
+    if any(w in text for w in handoff_keywords):
+        return "handoff"
+        
+    booking_keywords = ["agendar", "marcar", "vaga", "horario", "horário", "consulta", "especialista", "medico", "médico", "doutor", "doutora", "marcar consulta", "remarcar", "preco", "preço", "quanto custa", "valor"]
+    if any(w in text for w in booking_keywords):
+        return "booking"
+        
+    followup_keywords = ["lembrete", "confirmo", "confirmado", "estarei la", "estarei lá", "pos-consulta", "pós-consulta", "retorno", "como foi", "remedio", "remédio", "duvida", "dúvida"]
+    if any(w in text for w in followup_keywords):
+        return "followup"
+
+    # 2. Classificação via LLM gpt-5-mini para casos ambíguos
+    try:
+        router_system = (
+            "Você é o classificador de intenções do sistema Solara Connect.\n"
+            "Analise a mensagem do paciente e responda APENAS com uma destas palavras:\n"
+            "- booking (para intenções de agendamento, marcação, vagas ou preços)\n"
+            "- followup (para confirmação de lembrete, pós-consulta ou acompanhamento)\n"
+            "- handoff (para pedido de atendimento humano, emergências ou reclamações)\n"
+            "- general (para saudações ou mensagens gerais)\n"
+            "Responda EXATAMENTE uma palavra das 4 acima."
+        )
+        res = await client.chat.completions.create(
+            model=settings.MODEL_LLM,
+            messages=[
+                {"role": "system", "content": router_system},
+                {"role": "user", "content": user_message}
+            ],
+            max_completion_tokens=10,
+        )
+        intent = (res.choices[0].message.content or "").strip().lower()
+        if intent in {"booking", "followup", "handoff", "general"}:
+            return intent
+    except Exception:
+        pass
+
+    return "general"
+
+
 NO_CONTEXT_NOTE = """# DADOS DESTA CLÍNICA
 (Ainda não foram carregados os dados cadastrais da clínica nesta conversa.)
 Portanto: não invente informações específicas (preços, horários, endereço, profissionais, convênios). Quando precisar de algum desses dados, pergunte ao paciente ou ofereça encaminhar para a equipe."""
@@ -386,16 +468,31 @@ async def chat_with_solara(
     should_introduce: bool = True,
     patient_name: str | None = None,
     booking: dict | None = None,
+    agent_mode: str = "auto",
 ) -> str:
-    """Gera a resposta da Solara.
+    """Gera a resposta da Solara utilizando a Arquitetura Multi-Agente (GPT-5 Mini).
 
-    booking: {"clinic_id", "patient_id"} habilita o pré-agendamento real
-    (function-calling). Sem ele (ex.: chat do dashboard), a Solara apenas conversa.
+    agent_mode: "auto" (Roteamento inteligente), "booking" (Agendamento),
+                "followup" (Acompanhamento), "handoff" (Transbordo humano) ou "general".
+    booking: {"clinic_id", "patient_id"} habilita o pré-agendamento real.
     """
+    if agent_mode == "auto":
+        agent_mode = await classify_intent(user_message, chat_history)
+
+    if agent_mode == "booking":
+        agent_prompt = SOLARA_BOOKING_PROMPT
+    elif agent_mode == "followup":
+        agent_prompt = SOLARA_FOLLOWUP_PROMPT
+    elif agent_mode == "handoff":
+        agent_prompt = SOLARA_HANDOFF_PROMPT
+    else:
+        agent_prompt = ""
+
     intro_note = INTRO_NOTE_FIRST if should_introduce else INTRO_NOTE_CONTINUE
     now_local = datetime.datetime.now(ZoneInfo("America/Sao_Paulo"))
     system_content = (
         SOLARA_SYSTEM_PROMPT
+        + ("\n\n" + agent_prompt if agent_prompt else "")
         + "\n\n"
         + _format_clinic_context(clinic_context)
         + "\n\n"

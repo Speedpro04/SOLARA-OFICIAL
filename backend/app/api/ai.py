@@ -49,6 +49,7 @@ class ChatRequest(BaseModel):
     message: str
     phone: str = None  # Telefone opcional para contexto futuro
     clinic_id: str = None  # Opcional: permite carregar os dados reais da clínica
+    agent_mode: str = "auto"  # "auto", "booking", "followup", "handoff" ou "general"
     chat_history: list[ChatMessage] | None = None
 
 
@@ -137,7 +138,13 @@ async def chat_endpoint(request: ChatRequest, http_request: Request):
         should_introduce = not any(
             str((m or {}).get("role", "")).lower() == "assistant" for m in (history or [])
         )
-        response_text = await chat_with_solara(request.message, history, clinic_context, should_introduce)
+        response_text = await chat_with_solara(
+            request.message,
+            history,
+            clinic_context,
+            should_introduce,
+            agent_mode=request.agent_mode
+        )
         return {
             "status": "success",
             "solara_response": response_text
