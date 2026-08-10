@@ -1,7 +1,7 @@
 # PRD — Solara Medical Connect
 ### Product Requirements Document
-**Versão:** 2.0
-**Data:** 31/05/2026
+**Versão:** 2.1
+**Data:** 10/08/2026
 **Autor:** Axos Hub
 **E-mail operacional:** contato@solaraconnect.online
 **Status:** ✅ Em produção (deploy via EasyPanel)
@@ -39,11 +39,11 @@ A **Solara** é o cérebro do sistema: uma gestora virtual de atendimento que ac
 | **Ícones** | Lucide React |
 | **Estilização** | CSS Vanilla (Design System próprio) |
 | **Backend** | FastAPI (Python) + Celery + Redis |
-| **IA / LLM** | **OpenAI `gpt-5-mini`** (reasoning_effort low) |
-| **WhatsApp** | Evolution API |
+| **IA / LLM** | **Arquitetura Multi-Agente (`gpt-5-mini`)** (Router + Booking + Follow-up + Handoff) |
+| **WhatsApp** | Evolution API (Transição planejada para API Oficial da Meta) |
 | **Autenticação** | Supabase Auth (JWT) |
 | **Banco de Dados** | PostgreSQL (Supabase) |
-| **Pagamentos** | Stripe (Payment Links + Webhooks) |
+| **Pagamentos** | Stripe Produção CNPJ `26.998.571/0001-50` (Payment Links + Webhook `we_1U31...`) |
 | **E-mail** | SMTP Gmail (contato@solaraconnect.online) |
 | **Hospedagem** | EasyPanel (frontend + backend) + Supabase |
 
@@ -88,8 +88,12 @@ RELATORIO-MELHORIAS-SOLARA.md      # Changelog de evolução
 
 ## 3. Solara IA — Gestora de Atendimento (cérebro do sistema)
 
-### 3.1 Papel
-Gestora virtual que recebe, acolhe, organiza, argumenta e conduz o próximo passo — vendendo valor sem pressionar e convertendo interesse em agendamento.
+### 3.1 Arquitetura Multi-Agente Especializada (Substituiu a IA Monolítica)
+A **Solara** deixou de ser um modelo monolítico e agora opera como um **Sistema Multi-Agente Especializado** acionado por um Roteador Inteligente (Router) que identifica a intenção do paciente e aciona o agente correto (todos rodando em `gpt-5-mini`):
+1. **Router / Intent Classifier:** Classifica a intenção em agendamento, acompanhamento, transbordo ou geral.
+2. **Booking Agent (Agente de Agendamento):** Focado na coleta ágil de dados e acionamento da ferramenta de pré-agendamento `criar_pre_agendamento`.
+3. **Follow-up Agent (Agente de Relacionamento):** Focado em confirmações, lembretes de consultas e reengajamento empático.
+4. **Handoff Agent (Agente de Transbordo):** Triagem imediata de emergências/pedidos humanos e transferência para a recepção (pausando a IA).
 
 ### 3.2 Capacidades
 - Agendamentos, remarcações, confirmações e cancelamentos
@@ -189,11 +193,12 @@ A cada conversa, o backend injeta no prompt os **dados reais da clínica** (nome
 ### 8.1 OpenAI (IA) — ✅ produção
 - Modelo `gpt-5-mini`, validado em produção. Ver seção 3.
 
-### 8.2 Stripe (Pagamentos) — ✅ produção
-- Payment Links nos 4 planos + webhook vinculando assinatura à clínica.
+### 8.2 Stripe (Pagamentos) — ✅ produção (CNPJ)
+- Migração para a conta CNPJ (`26.998.571/0001-50`) concluída. Payment Links nos 4 planos + webhook (`we_1U31...`) vinculando assinaturas às clínicas.
 
-### 8.3 WhatsApp (Evolution API) — ✅ implementado
-- Base: `https://evoapi.axoshub.com` · instância `axos-evoapi`.
+### 8.3 WhatsApp — 🔄 Em transição (Evolution API → API Oficial da Meta)
+- Atualmente em uso: Evolution API (`https://evoapi.axoshub.com`).
+- **Próximo Passo:** Abandono da Evolution API e migração definitiva para a **API Oficial da Meta (WhatsApp Cloud API)** para maior estabilidade e conformidade oficial.
 
 ### 8.4 Marketplace de Parceiros (Monetização) — ✅ produção
 - 70 fornecedores reais (links verificados) em 13 categorias, incluindo Regional Vale do Paraíba.
@@ -203,19 +208,20 @@ A cada conversa, o backend injeta no prompt os **dados reais da clínica** (nome
 
 ## 9. Roadmap
 
-### ✅ Entregue (v1 → v2)
+### ✅ Entregue (v1 → v2.1)
 - [x] Landing, Login, Cadastro, Checkout, Dashboard
 - [x] Backend FastAPI + Celery + Supabase
-- [x] **Solara IA Manager** (contexto dinâmico + guardrails)
-- [x] Migração para OpenAI `gpt-5-mini`
-- [x] Pagamentos reais (Stripe Payment Links + webhook)
-- [x] WhatsApp (Evolution API)
+- [x] **Solara IA Multi-Agente (GPT-5 Mini):** Roteador + Agendamento + Follow-up + Handoff
+- [x] Migração Stripe de CPF para CNPJ (`26.998.571/0001-50`) em produção
 - [x] Marketplace B2B com 70 parceiros + contagem de cliques + analytics
 - [x] Segurança (rate-limit, RLS) e performance (code-splitting)
-- [x] Deploy em produção (EasyPanel) — 31/05/2026
+- [x] Deploy em produção (EasyPanel) — 10/08/2026
 
 ### 🔜 Próximos
+- [ ] **Migração para a API Oficial da Meta (WhatsApp Cloud API)** (Abandono da Evolution API)
 - [ ] **RAG + Embeddings (pgvector)** — Solara responde por documentos reais da clínica
+- [ ] Cadastro guiado dos dados da clínica (alimenta o contexto da IA)
+- [ ] Kanban/agenda visual, prontuário eletrônico, NPS automático
 - [ ] **Sistema de vendas automático** (FastAPI + Celery + Evolution + LLM)
 - [ ] Cadastro guiado dos dados da clínica (alimenta o contexto da IA)
 - [ ] Kanban/agenda visual, prontuário eletrônico, NPS automático
