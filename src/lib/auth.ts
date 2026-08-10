@@ -233,7 +233,7 @@ export async function logEmailSent(params: {
   await supabase.from('email_logs').insert({
     clinic_id: params.clinicId,
     to_email: params.toEmail,
-    from_email: 'axoshub.solara@gmail.com',
+    from_email: 'contato@solaraconnect.online',
     subject: params.subject,
     template: params.template,
     status: 'sent',

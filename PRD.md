@@ -3,7 +3,7 @@
 **Versão:** 2.0
 **Data:** 31/05/2026
 **Autor:** Axos Hub
-**E-mail operacional:** axoshub.solara@gmail.com
+**E-mail operacional:** contato@solaraconnect.online
 **Status:** ✅ Em produção (deploy via EasyPanel)
 
 ---
@@ -44,7 +44,7 @@ A **Solara** é o cérebro do sistema: uma gestora virtual de atendimento que ac
 | **Autenticação** | Supabase Auth (JWT) |
 | **Banco de Dados** | PostgreSQL (Supabase) |
 | **Pagamentos** | Stripe (Payment Links + Webhooks) |
-| **E-mail** | SMTP Gmail (axoshub.solara@gmail.com) |
+| **E-mail** | SMTP Gmail (contato@solaraconnect.online) |
 | **Hospedagem** | EasyPanel (frontend + backend) + Supabase |
 
 ### 2.2 Credenciais do Projeto

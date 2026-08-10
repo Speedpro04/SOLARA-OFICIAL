@@ -1861,7 +1861,7 @@ const Dashboard = ({ onLogout, clinicId }: DashboardProps) => {
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '20px', fontWeight: 600, color: colors.primary, marginBottom: 8 }}>E-mail de Notificações</label>
-                      <input defaultValue="axoshub.solara@gmail.com" style={{ width: '100%', padding: '12px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none' }} />
+                      <input defaultValue="contato@solaraconnect.online" style={{ width: '100%', padding: '12px 16px', borderRadius: 2, border: '1px solid #e2e8f0', outline: 'none' }} />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                       <div>

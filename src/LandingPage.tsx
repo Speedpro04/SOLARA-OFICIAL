@@ -893,7 +893,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
                 <span style={{ fontWeight: '700', color: colors.primary }}>Solara Connect © 2026</span>
               </div>
               <div style={{ fontSize: '0.85rem', color: '#888' }}>
-                Contato: <a href="mailto:axoshub.solara@gmail.com" style={{ color: colors.btnSuccess, textDecoration: 'none' }}>axoshub.solara@gmail.com</a>
+                Contato: <a href="mailto:contato@solaraconnect.online" style={{ color: colors.btnSuccess, textDecoration: 'none' }}>contato@solaraconnect.online</a>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#aaa', letterSpacing: '0.02em' }}>
+                CNPJ: 26.998.571/0001-50
               </div>
             </div>
 

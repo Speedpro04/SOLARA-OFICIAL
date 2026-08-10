@@ -123,7 +123,7 @@ CREATE TABLE email_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     clinic_id UUID REFERENCES clinics(id) ON DELETE SET NULL,
     to_email TEXT NOT NULL,
-    from_email TEXT NOT NULL DEFAULT 'axoshub.solara@gmail.com',
+    from_email TEXT NOT NULL DEFAULT 'contato@solaraconnect.online',
     subject TEXT NOT NULL,
     template TEXT,
     status TEXT DEFAULT 'sent' CHECK (status IN ('queued', 'sent', 'delivered', 'failed', 'bounced')),

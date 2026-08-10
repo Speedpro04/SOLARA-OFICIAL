@@ -157,7 +157,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ planName, planPrice, priceI
                 </div>
                 <div>
                   <div style={{ color: '#fff', fontWeight: 600, fontSize: '1.1rem' }}>Recibo & Acesso Liberado</div>
-                  <div style={{ color: colors.success, fontSize: '0.9rem' }}>De: axoshub.solara@gmail.com</div>
+                  <div style={{ color: colors.success, fontSize: '0.9rem' }}>De: contato@solaraconnect.online</div>
                 </div>
               </div>
               <div style={{ color: '#ccc', lineHeight: 1.6, fontSize: '1rem' }}>

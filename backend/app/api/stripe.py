@@ -14,7 +14,6 @@ try:
     from stripe.error import SignatureVerificationError, InvalidRequestError
 except ImportError:
     from stripe import SignatureVerificationError, InvalidRequestError
-import os
 from app.config import settings
 
 router = APIRouter(prefix="/api/stripe", tags=["stripe"])
@@ -37,15 +36,13 @@ MANAGED_SUBSCRIPTION_STATUSES = {"pending", "active", "trialing", "past_due", "u
 
 
 def _allowed_price_ids() -> Set[str]:
+    """Retorna apenas os Price IDs configurados via settings (nunca hardcoded)."""
     return {
         pid for pid in [
             settings.STRIPE_PRICE_BASICO,
             settings.STRIPE_PRICE_CRESCIMENTO,
             settings.STRIPE_PRICE_AVANCADO,
             settings.STRIPE_PRICE_ENTERPRISE,
-            os.getenv("STRIPE_PRICE_STARTER", ""),
-            os.getenv("STRIPE_PRICE_PROFESSIONAL", ""),
-            os.getenv("STRIPE_PRICE_ENTERPRISE", ""),
         ] if pid
     }
 
@@ -101,10 +98,14 @@ def _require_owner_access(request: Request, clinic_id: str, user_email: str) -> 
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
     """
-    Webhook para eventos do Stripe
+    Webhook para eventos do Stripe (conta CNPJ - solaraconnect.online)
+    Eventos configurados:
     - checkout.session.completed
-    - invoice.payment_succeeded
+    - customer.subscription.created
     - customer.subscription.updated
+    - customer.subscription.deleted
+    - invoice.paid
+    - invoice.payment_failed
     """
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
@@ -128,7 +129,11 @@ async def stripe_webhook(request: Request):
         session = event["data"]["object"]
         await handle_checkout_completed(session)
 
-    elif event_type == "invoice.payment_succeeded":
+    elif event_type == "customer.subscription.created":
+        subscription = event["data"]["object"]
+        await handle_subscription_updated(subscription)
+
+    elif event_type == "invoice.paid":  # substitui o depreciado invoice.payment_succeeded
         invoice = event["data"]["object"]
         subscription_id = invoice.get("subscription")
         if subscription_id and supabase_admin:
@@ -209,12 +214,13 @@ async def create_checkout_session(payload: CheckoutSessionRequest, request: Requ
 @router.get("/prices")
 async def get_prices():
     """
-    Retorna os preços configurados
+    Retorna os Price IDs dos planos configurados (apenas IDs, sem chaves secretas).
     """
     return {
-        "starter": os.getenv("STRIPE_PRICE_STARTER"),
-        "professional": os.getenv("STRIPE_PRICE_PROFESSIONAL"),
-        "enterprise": os.getenv("STRIPE_PRICE_ENTERPRISE"),
+        "basico": settings.STRIPE_PRICE_BASICO or None,
+        "crescimento": settings.STRIPE_PRICE_CRESCIMENTO or None,
+        "avancado": settings.STRIPE_PRICE_AVANCADO or None,
+        "enterprise": settings.STRIPE_PRICE_ENTERPRISE or None,
     }
 
 # Handlers
@@ -264,7 +270,7 @@ async def handle_checkout_completed(session: dict):
             supabase_admin.table("email_logs").insert({
                 "clinic_id": clinic_id,
                 "to_email": user_email,
-                "from_email": "axoshub.solara@gmail.com",
+                "from_email": "contato@solaraconnect.online",
                 "subject": f"Assinatura ativada - Plano {plan_name or 'Solara Connect'}",
                 "template": "welcome",
                 "status": "sent",

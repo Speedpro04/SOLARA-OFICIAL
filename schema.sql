@@ -155,7 +155,7 @@ CREATE TABLE email_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     clinic_id UUID REFERENCES clinics(id) ON DELETE SET NULL,
     to_email TEXT NOT NULL,
-    from_email TEXT NOT NULL DEFAULT 'axoshub.solara@gmail.com',
+    from_email TEXT NOT NULL DEFAULT 'contato@solaraconnect.online',
     subject TEXT NOT NULL,
     template TEXT,  -- 'welcome', 'payment_confirmed', 'password_reset'
     status TEXT DEFAULT 'sent'

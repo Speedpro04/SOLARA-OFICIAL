@@ -55,6 +55,7 @@ class Settings:
     # Stripe
     STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
     STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    STRIPE_WEBHOOK_ID = os.getenv("STRIPE_WEBHOOK_ID", "")  # ID do endpoint: we_...
     
     # Stripe Price IDs
     STRIPE_PRICE_BASICO = os.getenv("STRIPE_PRICE_BASICO", "")
